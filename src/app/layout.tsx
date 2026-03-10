@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AuthGate } from "@/components/auth-gate";
 import { Sidebar } from "@/components/sidebar";
 import "./globals.css";
@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   description: "AI-powered Instagram captions in Hasti's style",
   icons: FAVICON_URL ? { icon: FAVICON_URL } : undefined,
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
   themeColor: "#09090b",
 };
 
