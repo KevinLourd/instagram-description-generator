@@ -19,7 +19,19 @@ export const POST = async (request: Request) => {
     model: parsed.data.modelId,
     messages: [
       { role: "system", content: DEFAULT_SYSTEM_PROMPT },
-      { role: "user", content: parsed.data.prompt },
+      {
+        role: "user",
+        content: [
+          {
+            type: "image_url",
+            image_url: { url: parsed.data.imageUrl, detail: "low" },
+          },
+          {
+            type: "text",
+            text: "Write an Instagram caption for this photo.",
+          },
+        ],
+      },
     ],
     temperature: 0.8,
     max_tokens: 500,

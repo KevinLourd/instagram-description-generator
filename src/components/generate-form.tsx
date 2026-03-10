@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 type Job = {
   id: string;
@@ -9,7 +10,7 @@ type Job = {
 };
 
 export const GenerateForm = () => {
-  const [prompt, setPrompt] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [modelId, setModelId] = useState("");
   const [models, setModels] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
@@ -37,7 +38,7 @@ export const GenerateForm = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGenerate = async () => {
-    if (!prompt.trim() || !modelId) return;
+    if (!imageUrl.trim() || !modelId) return;
     setLoading(true);
     setError("");
     setCaption("");
@@ -45,7 +46,7 @@ export const GenerateForm = () => {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, modelId }),
+        body: JSON.stringify({ imageUrl, modelId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -66,12 +67,14 @@ export const GenerateForm = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isValidUrl = imageUrl.startsWith("http://") || imageUrl.startsWith("https://");
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Write a Caption</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Describe your photo and get a caption written in your style, Hasti.
+          Paste a photo URL and get a caption written in your style, Hasti.
         </p>
       </div>
 
@@ -124,20 +127,33 @@ export const GenerateForm = () => {
 
           <div>
             <label className="mb-1 block text-sm text-zinc-300">
-              Describe your photo
+              Paste your photo URL
             </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Ex: Photo of a sunset at the beach, summer vibes, feeling grateful..."
-              rows={3}
+            <input
+              type="url"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/my-photo.jpg"
               className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500"
             />
           </div>
 
+          {isValidUrl && (
+            <div className="relative aspect-square w-full max-w-[240px] overflow-hidden rounded-lg border border-zinc-700">
+              <Image
+                src={imageUrl}
+                alt="Photo preview"
+                fill
+                sizes="240px"
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          )}
+
           <button
             onClick={handleGenerate}
-            disabled={loading || !prompt.trim()}
+            disabled={loading || !isValidUrl}
             className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {loading ? "Writing..." : "Write My Caption"}

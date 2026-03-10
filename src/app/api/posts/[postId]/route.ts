@@ -32,14 +32,17 @@ export const POST = async (
       { status: 400 }
     );
   }
-
-  const userPrompt = post.imageUrl
-    ? `Instagram post image: ${post.imageUrl}`
-    : "Instagram post";
+  if (!post.imageUrl) {
+    return NextResponse.json(
+      { error: "This post has no image and cannot be used for training" },
+      { status: 400 }
+    );
+  }
 
   await addTrainingExample({
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
-    userPrompt,
+    userPrompt: "Write an Instagram caption for this photo.",
+    imageUrl: post.imageUrl,
     assistantResponse: post.caption,
   });
 

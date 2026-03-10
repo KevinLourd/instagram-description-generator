@@ -114,6 +114,10 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
             </svg>
             Used as example
           </div>
+        ) : !post.imageUrl ? (
+          <p className="text-sm text-orange-400">
+            This post has no image and cannot be used for training.
+          </p>
         ) : (
           <>
             {error && (
@@ -126,6 +130,9 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
             >
               {adding ? "Adding..." : "Use as example"}
             </button>
+            <p className="mt-2 text-xs text-zinc-500">
+              Note: OpenAI may skip this example during training if the image contains people or faces.
+            </p>
           </>
         )}
       </div>
