@@ -1,6 +1,8 @@
 export function register() {
   // Suppress DEP0169 (url.parse) deprecation warning from Next.js internals.
-  // Next.js uses url.parse() internally and there's no fix on their side yet.
+  // Only runs in Node.js runtime — process.emit is unavailable in Edge.
+  if (typeof process.emit !== "function") return;
+
   const originalEmit = process.emit.bind(process);
   // @ts-expect-error - overriding process.emit signature
   process.emit = function (event: string, ...args: unknown[]) {
