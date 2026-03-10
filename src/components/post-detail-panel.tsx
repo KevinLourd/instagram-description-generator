@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { InstagramPost } from "@/lib/types";
 
 type Props = {
@@ -58,11 +59,15 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
 
       <div className="flex-1 overflow-y-auto p-6">
         {post.imageUrl && (
-          <img
-            src={post.imageUrl}
-            alt="Instagram post"
-            className="w-full rounded-lg object-cover"
-          />
+          <div className="relative aspect-square w-full">
+            <Image
+              src={post.imageUrl}
+              alt="Instagram post"
+              fill
+              sizes="480px"
+              className="rounded-lg object-cover"
+            />
+          </div>
         )}
 
         <div className="mt-4 space-y-3">
