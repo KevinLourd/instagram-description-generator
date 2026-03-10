@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const { mockSql } = vi.hoisted(() => ({ mockSql: vi.fn() }));
-vi.mock("@/lib/db", () => ({ sql: mockSql }));
+vi.mock("@/lib/db", () => ({ sql: mockSql, ensureTables: vi.fn() }));
 
 import {
   getTrainingExamples,

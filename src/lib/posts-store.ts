@@ -1,4 +1,4 @@
-import { sql } from "./db";
+import { sql, ensureTables } from "./db";
 import type { InstagramPost } from "./types";
 
 const rowToPost = (r: Record<string, unknown>): InstagramPost => ({
@@ -12,6 +12,7 @@ const rowToPost = (r: Record<string, unknown>): InstagramPost => ({
 });
 
 export const getScrapedPosts = async (): Promise<InstagramPost[]> => {
+  await ensureTables();
   const rows = await sql`SELECT id, caption, image_url, timestamp, likes_count, url, added_to_training FROM scraped_posts ORDER BY created_at DESC`;
   return rows.map(rowToPost);
 };
@@ -20,6 +21,7 @@ export const addScrapedPosts = async (
   newPosts: Omit<InstagramPost, "id" | "addedToTraining">[]
 ): Promise<InstagramPost[]> => {
   if (newPosts.length === 0) return [];
+  await ensureTables();
 
   const added: InstagramPost[] = [];
   for (const p of newPosts) {
@@ -38,6 +40,7 @@ export const addScrapedPosts = async (
 export const markAsTraining = async (
   postId: string
 ): Promise<InstagramPost | null> => {
+  await ensureTables();
   const rows = await sql`UPDATE scraped_posts SET added_to_training = true WHERE id = ${postId} RETURNING id, caption, image_url, timestamp, likes_count, url, added_to_training`;
   return rows.length > 0 ? rowToPost(rows[0]) : null;
 };
@@ -45,6 +48,7 @@ export const markAsTraining = async (
 export const getPostById = async (
   postId: string
 ): Promise<InstagramPost | null> => {
+  await ensureTables();
   const rows = await sql`SELECT id, caption, image_url, timestamp, likes_count, url, added_to_training FROM scraped_posts WHERE id = ${postId}`;
   return rows.length > 0 ? rowToPost(rows[0]) : null;
 };
