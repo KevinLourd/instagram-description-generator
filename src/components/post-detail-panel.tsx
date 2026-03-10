@@ -72,7 +72,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
 
         <div className="mt-4 space-y-3">
           <div className="flex items-center gap-3 text-xs text-zinc-500">
-            <span>{post.likesCount.toLocaleString()} likes</span>
+            <span>{post.likesCount >= 0 ? `${post.likesCount.toLocaleString()} likes` : ""}</span>
             {post.timestamp && (
               <span>{new Date(post.timestamp).toLocaleDateString()}</span>
             )}
