@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import path from "path";
-import os from "os";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { mockSql } = vi.hoisted(() => ({ mockSql: vi.fn() }));
+vi.mock("@/lib/db", () => ({ sql: mockSql }));
+
 import {
   getTrainingExamples,
   addTrainingExample,
@@ -9,96 +10,97 @@ import {
   exportAsJsonl,
 } from "@/lib/training-store";
 
-const tmpDir = path.join(os.tmpdir(), "lincoln-test");
-const tmpFile = path.join(tmpDir, "test-training-data.json");
-
-const emptyData = JSON.stringify({ examples: [] });
-
-beforeEach(async () => {
-  await mkdir(tmpDir, { recursive: true });
-  await writeFile(tmpFile, emptyData, "utf-8");
-});
-
-afterEach(async () => {
-  try {
-    await unlink(tmpFile);
-  } catch {
-    /* ignore */
-  }
+beforeEach(() => {
+  mockSql.mockReset();
 });
 
 describe("getTrainingExamples", () => {
-  it("returns empty array for fresh file", async () => {
-    const examples = await getTrainingExamples(tmpFile);
+  it("returns empty array when no rows", async () => {
+    mockSql.mockResolvedValue([]);
+    const examples = await getTrainingExamples();
     expect(examples).toEqual([]);
+  });
+
+  it("maps database rows to TrainingExample objects", async () => {
+    mockSql.mockResolvedValue([
+      {
+        id: "abc-123",
+        system_prompt: "sys",
+        user_prompt: "prompt",
+        assistant_response: "response",
+        created_at: new Date("2024-01-01T00:00:00Z"),
+      },
+    ]);
+    const examples = await getTrainingExamples();
+    expect(examples).toHaveLength(1);
+    expect(examples[0]).toEqual({
+      id: "abc-123",
+      systemPrompt: "sys",
+      userPrompt: "prompt",
+      assistantResponse: "response",
+      createdAt: "2024-01-01T00:00:00.000Z",
+    });
   });
 });
 
 describe("addTrainingExample", () => {
-  it("adds an example to the file", async () => {
-    const example = await addTrainingExample(
+  it("inserts and returns the new example", async () => {
+    mockSql.mockResolvedValue([
       {
-        systemPrompt: "You are a caption writer.",
-        userPrompt: "Beach sunset photo",
-        assistantResponse: "Chasing sunsets forever",
+        id: "new-id",
+        system_prompt: "You are a writer.",
+        user_prompt: "Beach photo",
+        assistant_response: "Waves and wonder",
+        created_at: new Date("2024-06-01T12:00:00Z"),
       },
-      tmpFile
-    );
+    ]);
 
-    expect(example.id).toBeDefined();
-    expect(example.userPrompt).toBe("Beach sunset photo");
+    const example = await addTrainingExample({
+      systemPrompt: "You are a writer.",
+      userPrompt: "Beach photo",
+      assistantResponse: "Waves and wonder",
+    });
+
+    expect(example.id).toBe("new-id");
+    expect(example.userPrompt).toBe("Beach photo");
     expect(example.createdAt).toBeDefined();
-
-    const all = await getTrainingExamples(tmpFile);
-    expect(all).toHaveLength(1);
-    expect(all[0].id).toBe(example.id);
   });
 });
 
 describe("removeTrainingExample", () => {
-  it("removes an example by id", async () => {
-    const example = await addTrainingExample(
-      {
-        systemPrompt: "sys",
-        userPrompt: "prompt",
-        assistantResponse: "caption",
-      },
-      tmpFile
-    );
-
-    const removed = await removeTrainingExample(example.id, tmpFile);
+  it("returns true when a row is deleted", async () => {
+    mockSql.mockResolvedValue([{ id: "abc" }]);
+    const removed = await removeTrainingExample("abc");
     expect(removed).toBe(true);
-
-    const all = await getTrainingExamples(tmpFile);
-    expect(all).toHaveLength(0);
   });
 
   it("returns false for non-existent id", async () => {
-    const removed = await removeTrainingExample("non-existent", tmpFile);
+    mockSql.mockResolvedValue([]);
+    const removed = await removeTrainingExample("non-existent");
     expect(removed).toBe(false);
   });
 });
 
 describe("exportAsJsonl", () => {
   it("exports examples in OpenAI JSONL chat format", async () => {
-    await addTrainingExample(
+    mockSql.mockResolvedValue([
       {
-        systemPrompt: "You are a writer.",
-        userPrompt: "Beach photo",
-        assistantResponse: "Waves and wonder",
+        id: "1",
+        system_prompt: "You are a writer.",
+        user_prompt: "Beach photo",
+        assistant_response: "Waves and wonder",
+        created_at: new Date("2024-01-01"),
       },
-      tmpFile
-    );
-    await addTrainingExample(
       {
-        systemPrompt: "You are a writer.",
-        userPrompt: "City night",
-        assistantResponse: "Neon dreams",
+        id: "2",
+        system_prompt: "You are a writer.",
+        user_prompt: "City night",
+        assistant_response: "Neon dreams",
+        created_at: new Date("2024-01-02"),
       },
-      tmpFile
-    );
+    ]);
 
-    const jsonl = await exportAsJsonl(tmpFile);
+    const jsonl = await exportAsJsonl();
     const lines = jsonl.split("\n");
     expect(lines).toHaveLength(2);
 
