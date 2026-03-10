@@ -361,19 +361,19 @@ const PostsPage = () => {
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-zinc-800">
-          <table className="w-full min-w-[500px]">
+          <table className="w-full">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400">
+                <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-zinc-400">
                   Photo
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400">
+                <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-zinc-400">
                   Caption
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400">
+                <th className="hidden sm:table-cell px-4 py-3 text-right text-xs font-medium text-zinc-400">
                   Likes
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-zinc-400">
+                <th className="px-2 sm:px-4 py-3 text-center text-xs font-medium text-zinc-400">
                   Training
                 </th>
               </tr>
@@ -389,7 +389,7 @@ const PostsPage = () => {
                       selectedPost?.id === post.id ? "bg-zinc-800/50" : ""
                     }`}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-3">
                       {post.imageUrl ? (
                         <div className="relative h-10 w-10">
                           <Image
@@ -404,7 +404,7 @@ const PostsPage = () => {
                         <div className="h-10 w-10 rounded bg-zinc-800" />
                       )}
                     </td>
-                    <td className="max-w-xs px-4 py-3">
+                    <td className="max-w-[120px] sm:max-w-xs px-2 sm:px-4 py-3">
                       <p className="truncate text-sm text-zinc-200">
                         {post.caption}
                       </p>
@@ -414,10 +414,10 @@ const PostsPage = () => {
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-zinc-400">
+                    <td className="hidden sm:table-cell px-4 py-3 text-right text-sm text-zinc-400">
                       {post.likesCount != null && post.likesCount >= 0 ? post.likesCount.toLocaleString() : "—"}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-2 sm:px-4 py-3 text-center">
                       {status === "trained" && (
                         <span className="inline-flex items-center rounded-full bg-green-900/30 px-2 py-0.5 text-xs text-green-400">
                           Trained
