@@ -57,7 +57,7 @@ export const POST = async (request: Request) => {
       caption: p.caption as string,
       imageUrl: (p.displayUrl ?? p.imageUrl ?? "") as string,
       timestamp: (p.timestamp ?? p.takenAtTimestamp ?? "") as string,
-      likesCount: (p.likesCount ?? 0) as number,
+      likesCount: (typeof p.likesCount === "number" && p.likesCount >= 0 ? p.likesCount : null) as number | null,
       url: (p.url ?? "") as string,
     }));
 

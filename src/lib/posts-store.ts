@@ -6,7 +6,7 @@ const rowToPost = (r: Record<string, unknown>): InstagramPost => ({
   caption: r.caption as string,
   imageUrl: r.image_url as string,
   timestamp: r.timestamp as string,
-  likesCount: r.likes_count as number,
+  likesCount: r.likes_count != null && (r.likes_count as number) >= 0 ? (r.likes_count as number) : null,
   url: r.url as string,
   addedToTraining: r.added_to_training as boolean,
 });

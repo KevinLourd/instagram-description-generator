@@ -267,7 +267,7 @@ const PostsPage = () => {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-sm text-zinc-400">
-                    {post.likesCount.toLocaleString()}
+                    {post.likesCount != null && post.likesCount >= 0 ? post.likesCount.toLocaleString() : "—"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {post.addedToTraining ? (
