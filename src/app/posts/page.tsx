@@ -224,12 +224,6 @@ const PostsPage = () => {
     }
   };
 
-  const handleAdded = () => {
-    fetchPosts();
-    if (selectedPost) {
-      setSelectedPost({ ...selectedPost, addedToTraining: true });
-    }
-  };
 
   const filtered = posts.slice(0, visibleCount);
   const addedCount = posts.filter((p) => p.addedToTraining).length;
@@ -464,7 +458,6 @@ const PostsPage = () => {
         <PostDetailPanel
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
-          onAdded={handleAdded}
         />
       )}
     </div>
