@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "npx tsx scripts/migrate.ts && next build",
-    "start": "next start",
+    "dev": "NODE_OPTIONS='--disable-warning=DEP0169' next dev",
+    "build": "NODE_OPTIONS='--disable-warning=DEP0169' npx tsx scripts/migrate.ts && NODE_OPTIONS='--disable-warning=DEP0169' next build",
+    "start": "NODE_OPTIONS='--disable-warning=DEP0169' next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest"
