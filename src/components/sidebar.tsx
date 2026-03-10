@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { InstallPrompt } from "./install-prompt";
 
 const LOGO_TOKEN = process.env.NEXT_PUBLIC_LOGO_DEV_TOKEN;
 
@@ -80,6 +81,9 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+      <div className="px-3 py-4">
+        <InstallPrompt />
+      </div>
     </aside>
   );
 };
