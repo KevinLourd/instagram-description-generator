@@ -1,7 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
+
+const fileToDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 type Job = {
   id: string;
@@ -35,6 +43,7 @@ export const GenerateForm = () => {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [samples, setSamples] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSamples(pickRandom(3));
@@ -93,7 +102,15 @@ export const GenerateForm = () => {
     setSamples(pickRandom(3));
   };
 
-  const isValidUrl = imageUrl.startsWith("http://") || imageUrl.startsWith("https://");
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const dataUrl = await fileToDataUrl(file);
+    setImageUrl(dataUrl);
+    setCaption("");
+  };
+
+  const hasImage = imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("data:");
 
   if (models.length === 0) {
     return (
@@ -150,19 +167,40 @@ export const GenerateForm = () => {
 
         <div className="mt-4">
           <label className="mb-1 block text-sm text-zinc-300">
-            Paste a photo URL
+            Upload a photo or paste a URL
           </label>
-          <input
-            type="url"
-            value={imageUrl}
-            onChange={(e) => { setImageUrl(e.target.value); setCaption(""); }}
-            placeholder="https://example.com/my-photo.jpg"
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500"
-          />
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={imageUrl.startsWith("data:") ? "" : imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setCaption(""); }}
+              placeholder="https://example.com/my-photo.jpg"
+              className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-white"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Upload
+            </button>
+          </div>
+          {imageUrl.startsWith("data:") && (
+            <p className="mt-1.5 text-xs text-zinc-500">Image uploaded</p>
+          )}
         </div>
 
         {/* Image preview */}
-        {isValidUrl && (
+        {hasImage && (
           <div className="relative mt-4 aspect-square w-full max-w-[320px] overflow-hidden rounded-xl border border-zinc-700">
             <Image
               src={imageUrl}
@@ -177,18 +215,8 @@ export const GenerateForm = () => {
 
         {/* Sample photos */}
         <div className="mt-6">
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-zinc-500">Or try a sample photo</p>
-            <button
-              onClick={handleShuffle}
-              className="text-xs text-zinc-500 hover:text-zinc-300"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-3.5 w-3.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
-              </svg>
-            </button>
-          </div>
-          <div className="mt-2 flex gap-2">
+          <p className="text-xs text-zinc-500">Or try a sample photo</p>
+          <div className="mt-2 flex items-center gap-2">
             {samples.map((url) => (
               <button
                 key={url}
@@ -207,12 +235,21 @@ export const GenerateForm = () => {
                 />
               </button>
             ))}
+            <button
+              onClick={handleShuffle}
+              className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-zinc-700 text-zinc-500 transition-colors hover:border-zinc-500 hover:text-zinc-300"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+              </svg>
+              <span className="text-[10px] font-medium">Shuffle</span>
+            </button>
           </div>
         </div>
 
         <button
           onClick={handleGenerate}
-          disabled={loading || !isValidUrl}
+          disabled={loading || !hasImage}
           className="mt-6 w-fit rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading ? "Writing..." : "Generate Caption"}
