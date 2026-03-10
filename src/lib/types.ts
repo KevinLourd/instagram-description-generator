@@ -51,9 +51,27 @@ export const scrapeSchema = z.object({
 export type ScrapeInput = z.infer<typeof scrapeSchema>;
 
 export type InstagramPost = {
+  readonly id: string;
   readonly caption: string;
   readonly imageUrl: string;
   readonly timestamp: string;
   readonly likesCount: number;
   readonly url: string;
+  readonly addedToTraining: boolean;
 };
+
+export const scrapedPostsSchema = z.object({
+  posts: z.array(
+    z.object({
+      id: z.string(),
+      caption: z.string(),
+      imageUrl: z.string(),
+      timestamp: z.string(),
+      likesCount: z.number(),
+      url: z.string(),
+      addedToTraining: z.boolean(),
+    })
+  ),
+});
+
+export type ScrapedPostsData = z.infer<typeof scrapedPostsSchema>;

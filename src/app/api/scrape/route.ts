@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { scrapeSchema } from "@/lib/types";
-import type { InstagramPost } from "@/lib/types";
+import { addScrapedPosts } from "@/lib/posts-store";
 
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN ?? process.env.APIFY_API_KEY;
 const ACTOR_ID = "apify~instagram-scraper";
@@ -47,7 +47,7 @@ export const POST = async (request: Request) => {
 
   const rawPosts = await res.json();
 
-  const posts: InstagramPost[] = (rawPosts as Record<string, unknown>[])
+  const filtered = (rawPosts as Record<string, unknown>[])
     .filter(
       (p) => typeof p.caption === "string" && p.caption.trim().length > 0
     )
@@ -59,5 +59,11 @@ export const POST = async (request: Request) => {
       url: (p.url ?? "") as string,
     }));
 
-  return NextResponse.json({ posts, total: rawPosts.length });
+  const added = await addScrapedPosts(filtered);
+
+  return NextResponse.json({
+    added: added.length,
+    total: rawPosts.length,
+    withCaptions: filtered.length,
+  });
 };
