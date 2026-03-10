@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
 
+const APP_PASSWORD = process.env.APP_PASSWORD ?? "hasti";
+
 export const POST = async (request: Request) => {
-  const { password } = (await request.json()) as { password: string };
-  const expected = process.env.APP_PASSWORD;
+  const body = await request.json();
+  const { password } = body as { password?: string };
 
-  if (!expected) {
-    return NextResponse.json(
-      { error: "APP_PASSWORD not configured" },
-      { status: 500 }
-    );
+  if (!password || password.toLowerCase() !== APP_PASSWORD.toLowerCase()) {
+    return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
-  if (password === expected) {
-    return NextResponse.json({ ok: true });
-  }
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set("auth", "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+  });
 
-  return NextResponse.json({ error: "Wrong password" }, { status: 401 });
+  return response;
 };

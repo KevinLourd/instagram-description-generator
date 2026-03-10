@@ -71,13 +71,13 @@ export const GenerateForm = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Write a Caption</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Describe your photo and get a caption written in your style.
+          Describe your photo and get a caption written in your style, Hasti.
         </p>
       </div>
 
       {models.length === 0 ? (
         <div className="rounded-lg border border-yellow-800 bg-yellow-950/50 p-4 text-sm text-yellow-200">
-          Your style hasn&apos;t been learned yet. Here&apos;s what to do:
+          Your style hasn&apos;t been learned yet. Here&apos;s what to do, Hasti:
           <ol className="mt-2 list-inside list-decimal space-y-1">
             <li>
               Go to{" "}

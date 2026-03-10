@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { scrapeSchema } from "@/lib/types";
 import { addScrapedPosts } from "@/lib/posts-store";
+import { extractUsername } from "@/lib/instagram";
 
 const APIFY_TOKEN = process.env.APIFY_API_TOKEN ?? process.env.APIFY_API_KEY;
 const ACTOR_ID = "apify~instagram-scraper";
@@ -23,7 +24,8 @@ export const POST = async (request: Request) => {
     );
   }
 
-  const { username, resultsLimit } = parsed.data;
+  const { username: rawUsername, resultsLimit } = parsed.data;
+  const username = extractUsername(rawUsername);
 
   const res = await fetch(`${SYNC_ENDPOINT}?token=${APIFY_TOKEN}`, {
     method: "POST",
