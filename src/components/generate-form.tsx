@@ -38,6 +38,7 @@ export const GenerateForm = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [modelId, setModelId] = useState("");
   const [models, setModels] = useState<string[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -63,6 +64,8 @@ export const GenerateForm = () => {
         }
       } catch {
         /* ignore */
+      } finally {
+        setModelsLoading(false);
       }
     };
     fetchModels();
@@ -111,6 +114,10 @@ export const GenerateForm = () => {
   };
 
   const hasImage = imageUrl.startsWith("http://") || imageUrl.startsWith("https://") || imageUrl.startsWith("data:");
+
+  if (modelsLoading) {
+    return null;
+  }
 
   if (models.length === 0) {
     return (
