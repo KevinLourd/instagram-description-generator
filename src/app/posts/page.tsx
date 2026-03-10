@@ -3,8 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import type { InstagramPost } from "@/lib/types";
 import { PostDetailPanel } from "@/components/post-detail-panel";
+import { extractUsername } from "@/lib/instagram";
 
-const INSTAGRAM_USERNAME = process.env.NEXT_PUBLIC_INSTAGRAM_USERNAME ?? "";
+const INSTAGRAM_USERNAME = extractUsername(
+  process.env.NEXT_PUBLIC_INSTAGRAM_USERNAME ?? ""
+);
 
 const PostsPage = () => {
   const [posts, setPosts] = useState<InstagramPost[]>([]);
