@@ -27,6 +27,17 @@ const SAMPLE_PHOTOS = [
   "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=600",
   "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600",
   "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600",
+  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=600",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=600",
+  "https://images.unsplash.com/photo-1414609245224-afa02bfb3fda?w=600",
+  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=600",
+  "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=600",
+  "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=600",
+  "https://images.unsplash.com/photo-1465056836900-8f1e940f2114?w=600",
+  "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=600",
+  "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=600",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=600",
+  "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=600",
 ];
 
 const pickRandom = (count: number) => {
@@ -47,7 +58,7 @@ export const GenerateForm = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setSamples(pickRandom(3));
+    setSamples(pickRandom(10));
   }, []);
 
   useEffect(() => {
@@ -102,7 +113,7 @@ export const GenerateForm = () => {
   };
 
   const handleShuffle = () => {
-    setSamples(pickRandom(3));
+    setSamples(pickRandom(10));
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,7 +234,7 @@ export const GenerateForm = () => {
         {/* Sample photos */}
         <div className="mt-6">
           <p className="text-xs text-zinc-500">Or try a sample photo</p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             {samples.map((url) => (
               <button
                 key={url}
