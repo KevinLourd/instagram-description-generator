@@ -21,6 +21,8 @@ const PostsPage = () => {
   const [scrapeResult, setScrapeResult] = useState("");
   const [visibleCount, setVisibleCount] = useState(0);
   const staggerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [batchAdding, setBatchAdding] = useState(false);
+  const [batchResult, setBatchResult] = useState("");
 
   const fetchPosts = useCallback(async (stagger = false) => {
     setLoading(true);
@@ -99,6 +101,29 @@ const PostsPage = () => {
     }
   };
 
+  const handleBatchAdd = async () => {
+    setBatchAdding(true);
+    setBatchResult("");
+    try {
+      const res = await fetch("/api/posts/batch-add", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setBatchResult("Something went wrong. Please try again.");
+        return;
+      }
+      setBatchResult(
+        data.added > 0
+          ? `${data.added} post${data.added !== 1 ? "s" : ""} added as examples!`
+          : "All posts are already examples."
+      );
+      fetchPosts();
+    } catch {
+      setBatchResult("Connection issue. Please try again.");
+    } finally {
+      setBatchAdding(false);
+    }
+  };
+
   const allFiltered = posts.filter((p) => {
     if (filter === "added") return p.addedToTraining;
     if (filter === "not-added") return !p.addedToTraining;
@@ -162,28 +187,48 @@ const PostsPage = () => {
         </div>
       )}
 
-      {/* Filter tabs */}
+      {/* Batch result */}
+      {batchResult && (
+        <div className="mb-4 rounded-lg border border-green-800 bg-green-950/50 p-3 text-sm text-green-200">
+          {batchResult}
+        </div>
+      )}
+
+      {/* Filter tabs + batch button */}
       {posts.length > 0 && (
-        <div className="mb-4 flex gap-1 rounded-lg bg-zinc-900 p-1">
-          {(
-            [
-              { key: "all", label: `All (${posts.length})` },
-              { key: "added", label: `Examples (${addedCount})` },
-              { key: "not-added", label: `Not used yet (${notAddedCount})` },
-            ] as const
-          ).map((tab) => (
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="flex gap-1 rounded-lg bg-zinc-900 p-1">
+            {(
+              [
+                { key: "all", label: `All (${posts.length})` },
+                { key: "added", label: `Examples (${addedCount})` },
+                { key: "not-added", label: `Not used yet (${notAddedCount})` },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filter === tab.key
+                    ? "bg-zinc-700 text-white"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {notAddedCount > 0 && (
             <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                filter === tab.key
-                  ? "bg-zinc-700 text-white"
-                  : "text-zinc-400 hover:text-white"
-              }`}
+              onClick={handleBatchAdd}
+              disabled={batchAdding}
+              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
             >
-              {tab.label}
+              {batchAdding
+                ? "Adding..."
+                : `Add all ${notAddedCount} as examples`}
             </button>
-          ))}
+          )}
         </div>
       )}
 
@@ -250,7 +295,7 @@ const PostsPage = () => {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-sm text-zinc-400">
-                    {post.likesCount.toLocaleString()}
+                    {post.likesCount >= 0 ? post.likesCount.toLocaleString() : "—"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {post.addedToTraining ? (
