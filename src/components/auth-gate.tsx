@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, type ReactNode, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 const SESSION_KEY = "ig-gen-authed";
 
 export const AuthGate = ({ children }: { readonly children: ReactNode }) => {
+  const router = useRouter();
   const [authed, setAuthed] = useState(false);
   const [checking, setChecking] = useState(true);
   const [password, setPassword] = useState("");
@@ -31,6 +33,7 @@ export const AuthGate = ({ children }: { readonly children: ReactNode }) => {
       if (res.ok) {
         sessionStorage.setItem(SESSION_KEY, "1");
         setAuthed(true);
+        router.push("/");
       } else {
         setError("Wrong password");
       }
