@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { InstagramPost } from "@/lib/types";
 import { extractUsername } from "@/lib/instagram";
 
@@ -161,11 +162,15 @@ export const InstagramImport = ({ onImported }: Props) => {
                 </p>
               </div>
               {post.imageUrl && (
-                <img
-                  src={post.imageUrl}
-                  alt=""
-                  className="h-16 w-16 shrink-0 rounded object-cover"
-                />
+                <div className="relative h-16 w-16 shrink-0">
+                  <Image
+                    src={post.imageUrl}
+                    alt=""
+                    fill
+                    sizes="64px"
+                    className="rounded object-cover"
+                  />
+                </div>
               )}
             </label>
           ))}

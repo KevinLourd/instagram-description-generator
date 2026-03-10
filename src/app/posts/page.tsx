@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
 import type { InstagramPost } from "@/lib/types";
 import { PostDetailPanel } from "@/components/post-detail-panel";
 import { extractUsername } from "@/lib/instagram";
@@ -18,13 +19,21 @@ const PostsPage = () => {
   const [scraping, setScraping] = useState(false);
   const [scrapeError, setScrapeError] = useState("");
   const [scrapeResult, setScrapeResult] = useState("");
+  const [visibleCount, setVisibleCount] = useState(0);
+  const staggerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (stagger = false) => {
     setLoading(true);
     try {
       const res = await fetch("/api/posts");
       const data = await res.json();
-      setPosts(data.posts ?? []);
+      const newPosts: InstagramPost[] = data.posts ?? [];
+      setPosts(newPosts);
+      if (stagger && newPosts.length > 0) {
+        setVisibleCount(0);
+      } else {
+        setVisibleCount(newPosts.length);
+      }
     } catch {
       /* ignore */
     } finally {
@@ -35,6 +44,17 @@ const PostsPage = () => {
   useEffect(() => {
     fetchPosts();
   }, [fetchPosts]);
+
+  useEffect(() => {
+    if (visibleCount < posts.length) {
+      staggerTimer.current = setTimeout(() => {
+        setVisibleCount((c) => c + 1);
+      }, 80);
+      return () => {
+        if (staggerTimer.current) clearTimeout(staggerTimer.current);
+      };
+    }
+  }, [visibleCount, posts.length]);
 
   const handleScrape = async () => {
     if (!INSTAGRAM_USERNAME) return;
@@ -64,7 +84,7 @@ const PostsPage = () => {
       } else {
         setScrapeResult("No new posts found. You're up to date!");
       }
-      fetchPosts();
+      fetchPosts(true);
     } catch {
       setScrapeError("Connection issue. Please check your internet and try again.");
     } finally {
@@ -79,11 +99,12 @@ const PostsPage = () => {
     }
   };
 
-  const filtered = posts.filter((p) => {
+  const allFiltered = posts.filter((p) => {
     if (filter === "added") return p.addedToTraining;
     if (filter === "not-added") return !p.addedToTraining;
     return true;
   });
+  const filtered = allFiltered.slice(0, visibleCount);
 
   const addedCount = posts.filter((p) => p.addedToTraining).length;
   const notAddedCount = posts.length - addedCount;
@@ -205,11 +226,15 @@ const PostsPage = () => {
                 >
                   <td className="px-4 py-3">
                     {post.imageUrl ? (
-                      <img
-                        src={post.imageUrl}
-                        alt=""
-                        className="h-10 w-10 rounded object-cover"
-                      />
+                      <div className="relative h-10 w-10">
+                        <Image
+                          src={post.imageUrl}
+                          alt=""
+                          fill
+                          sizes="40px"
+                          className="rounded object-cover"
+                        />
+                      </div>
                     ) : (
                       <div className="h-10 w-10 rounded bg-zinc-800" />
                     )}
