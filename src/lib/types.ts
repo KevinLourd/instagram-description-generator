@@ -58,7 +58,7 @@ export type InstagramPost = {
   readonly caption: string;
   readonly imageUrl: string;
   readonly timestamp: string;
-  readonly likesCount: number;
+  readonly likesCount: number | null;
   readonly url: string;
   readonly addedToTraining: boolean;
 };
@@ -70,7 +70,7 @@ export const scrapedPostsSchema = z.object({
       caption: z.string(),
       imageUrl: z.string(),
       timestamp: z.string(),
-      likesCount: z.number(),
+      likesCount: z.number().nullable(),
       url: z.string(),
       addedToTraining: z.boolean(),
     })
