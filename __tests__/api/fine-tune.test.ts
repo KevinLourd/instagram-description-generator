@@ -21,21 +21,23 @@ vi.mock("@/lib/openai", () => ({
   }),
 }));
 
+const makeExample = (i: number, hasBase64: boolean) => ({
+  id: `ex-${i}`,
+  systemPrompt: "sys",
+  userPrompt: "user",
+  imageUrl: "https://example.com/img.jpg",
+  imageBase64: hasBase64 ? "data:image/jpeg;base64,abc" : "",
+  assistantResponse: "response",
+  createdAt: new Date().toISOString(),
+});
+
 describe("POST /api/fine-tune", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("rejects when fewer than 10 examples have images", async () => {
-    // 15 examples total but only 5 with images
-    const examples = Array.from({ length: 15 }, (_, i) => ({
-      id: `ex-${i}`,
-      systemPrompt: "sys",
-      userPrompt: "user",
-      imageUrl: i < 5 ? "https://example.com/img.jpg" : "",
-      assistantResponse: "response",
-      createdAt: new Date().toISOString(),
-    }));
+  it("rejects when fewer than 10 examples have base64 images", async () => {
+    const examples = Array.from({ length: 15 }, (_, i) => makeExample(i, i < 5));
     mockGetTrainingExamples.mockResolvedValue(examples);
 
     const { POST } = await import("@/app/api/fine-tune/route");
@@ -48,14 +50,7 @@ describe("POST /api/fine-tune", () => {
   });
 
   it("rejects when exportAsJsonl returns empty string", async () => {
-    const examples = Array.from({ length: 10 }, (_, i) => ({
-      id: `ex-${i}`,
-      systemPrompt: "sys",
-      userPrompt: "user",
-      imageUrl: "https://example.com/img.jpg",
-      assistantResponse: "response",
-      createdAt: new Date().toISOString(),
-    }));
+    const examples = Array.from({ length: 10 }, (_, i) => makeExample(i, true));
     mockGetTrainingExamples.mockResolvedValue(examples);
     mockExportAsJsonl.mockResolvedValue("");
 
@@ -67,15 +62,8 @@ describe("POST /api/fine-tune", () => {
     expect(data.error).toContain("empty");
   });
 
-  it("succeeds with 10+ examples that have images", async () => {
-    const examples = Array.from({ length: 12 }, (_, i) => ({
-      id: `ex-${i}`,
-      systemPrompt: "sys",
-      userPrompt: "user",
-      imageUrl: "https://example.com/img.jpg",
-      assistantResponse: "response",
-      createdAt: new Date().toISOString(),
-    }));
+  it("succeeds with 10+ examples that have base64 images", async () => {
+    const examples = Array.from({ length: 12 }, (_, i) => makeExample(i, true));
     mockGetTrainingExamples.mockResolvedValue(examples);
     mockExportAsJsonl.mockResolvedValue('{"messages":[]}\n{"messages":[]}');
 

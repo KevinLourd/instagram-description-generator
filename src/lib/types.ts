@@ -5,6 +5,7 @@ export const trainingExampleSchema = z.object({
   systemPrompt: z.string(),
   userPrompt: z.string(),
   imageUrl: z.string(),
+  imageBase64: z.string(),
   assistantResponse: z.string(),
   createdAt: z.string(),
 });
@@ -21,6 +22,7 @@ export const addExampleSchema = z.object({
   systemPrompt: z.string().min(1, "System prompt is required"),
   userPrompt: z.string().min(1, "User prompt is required"),
   imageUrl: z.string().min(1, "Image URL is required"),
+  imageBase64: z.string().min(1, "Image base64 data is required"),
   assistantResponse: z.string().min(1, "Example caption is required"),
 });
 

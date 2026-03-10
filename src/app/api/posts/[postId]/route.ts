@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPostById, markAsTraining } from "@/lib/posts-store";
-import { addTrainingExample } from "@/lib/training-store";
+import { addTrainingExample, downloadImageAsBase64 } from "@/lib/training-store";
 
 const DEFAULT_SYSTEM_PROMPT =
   "You are an expert Instagram caption writer. Write engaging, authentic captions that match the style and tone of this account.";
@@ -39,10 +39,19 @@ export const POST = async (
     );
   }
 
+  const imageBase64 = await downloadImageAsBase64(post.imageUrl);
+  if (!imageBase64) {
+    return NextResponse.json(
+      { error: "Could not download image. The link may have expired — try syncing your posts again." },
+      { status: 400 }
+    );
+  }
+
   await addTrainingExample({
     systemPrompt: DEFAULT_SYSTEM_PROMPT,
     userPrompt: "Write an Instagram caption for this photo.",
     imageUrl: post.imageUrl,
+    imageBase64,
     assistantResponse: post.caption,
   });
 
