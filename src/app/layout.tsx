@@ -2,9 +2,15 @@ import type { Metadata } from "next";
 import { Sidebar } from "@/components/sidebar";
 import "./globals.css";
 
+const LOGO_TOKEN = process.env.NEXT_PUBLIC_LOGO_DEV_TOKEN;
+const FAVICON_URL = LOGO_TOKEN
+  ? `https://img.logo.dev/instagram.com?token=${LOGO_TOKEN}&size=64&format=png`
+  : undefined;
+
 export const metadata: Metadata = {
-  title: "Lincoln - Instagram Caption Generator",
+  title: "Instagram Description Generator",
   description: "Generate Instagram captions using a fine-tuned model",
+  icons: FAVICON_URL ? { icon: FAVICON_URL } : undefined,
 };
 
 const RootLayout = ({ children }: { readonly children: React.ReactNode }) => {

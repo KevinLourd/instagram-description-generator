@@ -4,17 +4,25 @@ import { useState, useEffect, useCallback } from "react";
 import type { InstagramPost } from "@/lib/types";
 import { PostDetailPanel } from "@/components/post-detail-panel";
 
+const STORAGE_KEY = "lincoln_last_username";
+
 const PostsPage = () => {
   const [posts, setPosts] = useState<InstagramPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<InstagramPost | null>(null);
   const [filter, setFilter] = useState<"all" | "added" | "not-added">("all");
 
-  // Scrape form state
   const [username, setUsername] = useState("");
   const [limit, setLimit] = useState(50);
   const [scraping, setScraping] = useState(false);
   const [scrapeError, setScrapeError] = useState("");
+  const [scrapeResult, setScrapeResult] = useState("");
+  const [showScrapeForm, setShowScrapeForm] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) setUsername(saved);
+  }, []);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -33,16 +41,22 @@ const PostsPage = () => {
     fetchPosts();
   }, [fetchPosts]);
 
-  const handleScrape = async () => {
-    if (!username.trim()) return;
+  const handleScrape = async (usernameOverride?: string) => {
+    const target = usernameOverride ?? username;
+    if (!target.trim()) return;
     setScraping(true);
     setScrapeError("");
+    setScrapeResult("");
     try {
+      const cleanUsername = target.replace("@", "").trim();
+      localStorage.setItem(STORAGE_KEY, cleanUsername);
+      if (!usernameOverride) setUsername(cleanUsername);
+
       const res = await fetch("/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: username.replace("@", "").trim(),
+          username: cleanUsername,
           resultsLimit: limit,
         }),
       });
@@ -55,7 +69,10 @@ const PostsPage = () => {
         );
         return;
       }
-      setUsername("");
+      setScrapeResult(
+        `Found ${data.withCaptions} posts with captions, ${data.added} new added`
+      );
+      setShowScrapeForm(false);
       fetchPosts();
     } catch {
       setScrapeError("Network error");
@@ -79,61 +96,103 @@ const PostsPage = () => {
 
   const addedCount = posts.filter((p) => p.addedToTraining).length;
   const notAddedCount = posts.length - addedCount;
+  const savedUsername = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
 
   return (
     <div className={selectedPost ? "mr-[480px]" : ""}>
-      <div className="mb-6 flex items-start justify-between gap-6">
+      {/* Header */}
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Posts</h1>
           <p className="mt-1 text-sm text-zinc-400">
             {posts.length} post{posts.length !== 1 ? "s" : ""} scraped
             {posts.length > 0 && (
               <span>
-                {" "}
-                · {addedCount} in training · {notAddedCount} not added
+                {" "}· {addedCount} in training · {notAddedCount} not added
               </span>
             )}
           </p>
         </div>
-      </div>
-
-      {/* Scrape form */}
-      <div className="mb-6 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <label className="mb-1 block text-xs text-zinc-400">
-              Instagram Username
-            </label>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. hasti.salar1"
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500"
-            />
-          </div>
-          <div className="w-20">
-            <label className="mb-1 block text-xs text-zinc-400">Limit</label>
-            <input
-              type="number"
-              value={limit}
-              onChange={(e) => setLimit(Number(e.target.value))}
-              min={1}
-              max={200}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white"
-            />
-          </div>
+        <div className="flex gap-2">
+          {savedUsername && posts.length > 0 && (
+            <button
+              onClick={() => handleScrape(savedUsername)}
+              disabled={scraping}
+              className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-50"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className={`h-4 w-4 ${scraping ? "animate-spin" : ""}`}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+                />
+              </svg>
+              {scraping ? "Scraping..." : `Rescrape @${savedUsername}`}
+            </button>
+          )}
           <button
-            onClick={handleScrape}
-            disabled={scraping || !username.trim()}
-            className="shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            onClick={() => setShowScrapeForm(!showScrapeForm)}
+            className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90"
           >
-            {scraping ? "Scraping..." : "Scrape"}
+            {showScrapeForm ? "Cancel" : posts.length === 0 ? "Scrape Instagram" : "New Scrape"}
           </button>
         </div>
-        {scrapeError && (
-          <p className="mt-2 text-sm text-red-400">{scrapeError}</p>
-        )}
       </div>
+
+      {/* Scrape result message */}
+      {scrapeResult && (
+        <div className="mb-4 rounded-lg border border-green-800 bg-green-950/50 p-3 text-sm text-green-200">
+          {scrapeResult}
+        </div>
+      )}
+
+      {/* Scrape form */}
+      {(showScrapeForm || posts.length === 0) && (
+        <div className="mb-6 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="mb-1 block text-xs text-zinc-400">
+                Instagram Username
+              </label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="e.g. hasti.salar1"
+                onKeyDown={(e) => e.key === "Enter" && handleScrape()}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500"
+              />
+            </div>
+            <div className="w-20">
+              <label className="mb-1 block text-xs text-zinc-400">Limit</label>
+              <input
+                type="number"
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                min={1}
+                max={200}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white"
+              />
+            </div>
+            <button
+              onClick={() => handleScrape()}
+              disabled={scraping || !username.trim()}
+              className="shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {scraping ? "Scraping..." : "Scrape"}
+            </button>
+          </div>
+          {scrapeError && (
+            <p className="mt-2 text-sm text-red-400">{scrapeError}</p>
+          )}
+        </div>
+      )}
 
       {/* Filter tabs */}
       {posts.length > 0 && (
