@@ -36,11 +36,34 @@ export const removeTrainingExample = async (id: string): Promise<boolean> => {
   return rows.length > 0;
 };
 
+const downloadImageAsBase64 = async (url: string): Promise<string | null> => {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type") ?? "image/jpeg";
+    const buffer = await res.arrayBuffer();
+    const base64 = Buffer.from(buffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
+  } catch {
+    return null;
+  }
+};
+
 export const exportAsJsonl = async (): Promise<string> => {
   const examples = await getTrainingExamples();
-  return examples
-    .filter((ex) => ex.imageUrl)
-    .map((ex) =>
+  const withImages = examples.filter((ex) => ex.imageUrl);
+
+  // Download all images in parallel for speed
+  const results = await Promise.all(
+    withImages.map(async (ex) => {
+      const base64Url = await downloadImageAsBase64(ex.imageUrl);
+      return base64Url ? { ex, base64Url } : null;
+    })
+  );
+
+  return results
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .map(({ ex, base64Url }) =>
       JSON.stringify({
         messages: [
           { role: "system", content: ex.systemPrompt },
@@ -49,12 +72,9 @@ export const exportAsJsonl = async (): Promise<string> => {
             content: [
               {
                 type: "image_url",
-                image_url: { url: ex.imageUrl, detail: "low" },
+                image_url: { url: base64Url, detail: "low" },
               },
-              {
-                type: "text",
-                text: ex.userPrompt,
-              },
+              { type: "text", text: ex.userPrompt },
             ],
           },
           { role: "assistant", content: ex.assistantResponse },
