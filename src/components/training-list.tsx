@@ -44,7 +44,11 @@ export const TrainingList = ({ refreshKey }: Props) => {
   if (examples.length === 0) {
     return (
       <p className="text-sm text-zinc-400">
-        No training examples yet. Add at least 10 to fine-tune a model.
+        No examples yet. Import posts from{" "}
+        <a href="/posts" className="text-white underline">
+          My Posts
+        </a>{" "}
+        or add some by hand above.
       </p>
     );
   }
@@ -52,10 +56,20 @@ export const TrainingList = ({ refreshKey }: Props) => {
   return (
     <div className="space-y-3">
       <p className="text-sm text-zinc-400">
-        {examples.length} example{examples.length !== 1 ? "s" : ""}{" "}
+        {examples.length} example{examples.length !== 1 ? "s" : ""}
         {examples.length < 10 && (
           <span className="text-yellow-400">
-            (need at least 10 for fine-tuning)
+            {" "}
+            — you need at least 10 to start learning your style
+          </span>
+        )}
+        {examples.length >= 10 && (
+          <span className="text-green-400">
+            {" "}
+            — ready to{" "}
+            <a href="/fine-tune" className="underline">
+              learn your style
+            </a>
           </span>
         )}
       </p>
@@ -66,14 +80,14 @@ export const TrainingList = ({ refreshKey }: Props) => {
         >
           <div className="mb-2 flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-zinc-500">Prompt</p>
+              <p className="text-xs text-zinc-500">Photo description</p>
               <p className="truncate text-sm text-zinc-300">{ex.userPrompt}</p>
             </div>
             <button
               onClick={() => handleDelete(ex.id)}
               className="shrink-0 text-xs text-zinc-500 hover:text-red-400"
             >
-              Delete
+              Remove
             </button>
           </div>
           <p className="text-xs text-zinc-500">Caption</p>

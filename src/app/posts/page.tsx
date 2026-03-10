@@ -65,17 +65,19 @@ const PostsPage = () => {
         setScrapeError(
           typeof data.error === "string"
             ? data.error
-            : JSON.stringify(data.error)
+            : "Something went wrong. Please try again."
         );
         return;
       }
-      setScrapeResult(
-        `Found ${data.withCaptions} posts with captions, ${data.added} new added`
-      );
+      if (data.added > 0) {
+        setScrapeResult(`${data.added} new post${data.added !== 1 ? "s" : ""} imported!`);
+      } else {
+        setScrapeResult("No new posts found. You're up to date!");
+      }
       setShowScrapeForm(false);
       fetchPosts();
     } catch {
-      setScrapeError("Network error");
+      setScrapeError("Connection issue. Please check your internet and try again.");
     } finally {
       setScraping(false);
     }
@@ -96,21 +98,21 @@ const PostsPage = () => {
 
   const addedCount = posts.filter((p) => p.addedToTraining).length;
   const notAddedCount = posts.length - addedCount;
-  const savedUsername = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+  const savedUsername =
+    typeof window !== "undefined"
+      ? localStorage.getItem(STORAGE_KEY)
+      : null;
 
   return (
     <div className={selectedPost ? "mr-[480px]" : ""}>
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Posts</h1>
+          <h1 className="text-2xl font-bold text-white">My Posts</h1>
           <p className="mt-1 text-sm text-zinc-400">
-            {posts.length} post{posts.length !== 1 ? "s" : ""} scraped
-            {posts.length > 0 && (
-              <span>
-                {" "}· {addedCount} in training · {notAddedCount} not added
-              </span>
-            )}
+            {posts.length === 0
+              ? "Import your Instagram posts to get started."
+              : `${posts.length} post${posts.length !== 1 ? "s" : ""} — ${addedCount} used as examples, ${notAddedCount} not yet used`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -134,32 +136,39 @@ const PostsPage = () => {
                   d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
                 />
               </svg>
-              {scraping ? "Scraping..." : `Rescrape @${savedUsername}`}
+              {scraping ? "Checking..." : "Check for new posts"}
             </button>
           )}
           <button
             onClick={() => setShowScrapeForm(!showScrapeForm)}
             className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90"
           >
-            {showScrapeForm ? "Cancel" : posts.length === 0 ? "Scrape Instagram" : "New Scrape"}
+            {showScrapeForm
+              ? "Cancel"
+              : posts.length === 0
+                ? "Import from Instagram"
+                : "Import another account"}
           </button>
         </div>
       </div>
 
-      {/* Scrape result message */}
+      {/* Result message */}
       {scrapeResult && (
         <div className="mb-4 rounded-lg border border-green-800 bg-green-950/50 p-3 text-sm text-green-200">
           {scrapeResult}
         </div>
       )}
 
-      {/* Scrape form */}
+      {/* Import form */}
       {(showScrapeForm || posts.length === 0) && (
         <div className="mb-6 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+          <p className="mb-3 text-sm text-zinc-300">
+            Enter your Instagram username to import your posts.
+          </p>
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <label className="mb-1 block text-xs text-zinc-400">
-                Instagram Username
+                Username
               </label>
               <input
                 value={username}
@@ -169,8 +178,10 @@ const PostsPage = () => {
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500"
               />
             </div>
-            <div className="w-20">
-              <label className="mb-1 block text-xs text-zinc-400">Limit</label>
+            <div className="w-28">
+              <label className="mb-1 block text-xs text-zinc-400">
+                How many
+              </label>
               <input
                 type="number"
                 value={limit}
@@ -185,7 +196,7 @@ const PostsPage = () => {
               disabled={scraping || !username.trim()}
               className="shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {scraping ? "Scraping..." : "Scrape"}
+              {scraping ? "Importing..." : "Import"}
             </button>
           </div>
           {scrapeError && (
@@ -200,8 +211,8 @@ const PostsPage = () => {
           {(
             [
               { key: "all", label: `All (${posts.length})` },
-              { key: "added", label: `In Training (${addedCount})` },
-              { key: "not-added", label: `Not Added (${notAddedCount})` },
+              { key: "added", label: `Examples (${addedCount})` },
+              { key: "not-added", label: `Not used yet (${notAddedCount})` },
             ] as const
           ).map((tab) => (
             <button
@@ -225,7 +236,7 @@ const PostsPage = () => {
       ) : filtered.length === 0 ? (
         <p className="text-sm text-zinc-400">
           {posts.length === 0
-            ? "No posts scraped yet. Enter a username above to get started."
+            ? "No posts yet. Import your Instagram posts above to get started."
             : "No posts match this filter."}
         </p>
       ) : (
@@ -234,16 +245,16 @@ const PostsPage = () => {
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-900/50">
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400">
-                  Post
+                  Photo
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400">
-                  Caption
+                  Description
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400">
                   Likes
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-zinc-400">
-                  Training
+                  Status
                 </th>
               </tr>
             </thead>
@@ -283,11 +294,11 @@ const PostsPage = () => {
                   <td className="px-4 py-3 text-center">
                     {post.addedToTraining ? (
                       <span className="inline-flex items-center rounded-full bg-green-900/30 px-2 py-0.5 text-xs text-green-400">
-                        Added
+                        Example
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-                        Not added
+                        Not used yet
                       </span>
                     )}
                   </td>

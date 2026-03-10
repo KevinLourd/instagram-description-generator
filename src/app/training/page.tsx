@@ -11,13 +11,14 @@ const TrainingPage = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Training Data</h1>
+        <h1 className="text-2xl font-bold text-white">My Examples</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Manage your fine-tuning examples. Import posts from the{" "}
+          These are the captions the AI will learn from. You can import posts
+          from{" "}
           <a href="/posts" className="text-white underline">
-            Posts
-          </a>{" "}
-          page, or add examples manually below.
+            My Posts
+          </a>
+          , or add examples by hand below.
         </p>
       </div>
       <TrainingForm onAdded={refresh} />

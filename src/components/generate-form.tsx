@@ -30,7 +30,7 @@ export const GenerateForm = () => {
           setModelId(succeeded[0]);
         }
       } catch {
-        /* ignore - models will be empty */
+        /* ignore */
       }
     };
     fetchModels();
@@ -49,12 +49,12 @@ export const GenerateForm = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Generation failed");
+        setError(data.error ?? "Something went wrong, please try again.");
         return;
       }
       setCaption(data.caption);
     } catch {
-      setError("Network error");
+      setError("Connection issue. Please check your internet and try again.");
     } finally {
       setLoading(false);
     }
@@ -69,50 +69,67 @@ export const GenerateForm = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Generate Caption</h1>
+        <h1 className="text-2xl font-bold text-white">Write a Caption</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Describe your photo or context, and get an Instagram caption in your
-          style.
+          Describe your photo and get a caption written in your style.
         </p>
       </div>
 
       {models.length === 0 ? (
         <div className="rounded-lg border border-yellow-800 bg-yellow-950/50 p-4 text-sm text-yellow-200">
-          No fine-tuned models available yet. Go to{" "}
-          <a href="/training" className="underline">
-            Training Data
-          </a>{" "}
-          to add examples, then{" "}
-          <a href="/fine-tune" className="underline">
-            Fine-Tune
-          </a>{" "}
-          a model.
+          Your style hasn&apos;t been learned yet. Here&apos;s what to do:
+          <ol className="mt-2 list-inside list-decimal space-y-1">
+            <li>
+              Go to{" "}
+              <a href="/posts" className="underline">
+                My Posts
+              </a>{" "}
+              and import your Instagram posts
+            </li>
+            <li>
+              Mark at least 10 posts as examples in{" "}
+              <a href="/training" className="underline">
+                My Examples
+              </a>
+            </li>
+            <li>
+              Go to{" "}
+              <a href="/fine-tune" className="underline">
+                Learn My Style
+              </a>{" "}
+              and start the learning process
+            </li>
+          </ol>
         </div>
       ) : (
         <>
-          <div>
-            <label className="mb-1 block text-sm text-zinc-300">Model</label>
-            <select
-              value={modelId}
-              onChange={(e) => setModelId(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white"
-            >
-              {models.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
+          {models.length > 1 && (
+            <div>
+              <label className="mb-1 block text-sm text-zinc-300">
+                Which style to use
+              </label>
+              <select
+                value={modelId}
+                onChange={(e) => setModelId(e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white"
+              >
+                {models.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="mb-1 block text-sm text-zinc-300">
-              Describe your post
+              Describe your photo
             </label>
             <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. Photo of sunset at the beach, travel vibes, feeling grateful"
+              placeholder="Ex: Photo of a sunset at the beach, summer vibes, feeling grateful..."
               rows={3}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500"
             />
@@ -123,21 +140,21 @@ export const GenerateForm = () => {
             disabled={loading || !prompt.trim()}
             className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Generating..." : "Generate Caption"}
+            {loading ? "Writing..." : "Write My Caption"}
           </button>
         </>
       )}
 
       {error && (
         <div className="rounded-lg border border-red-800 bg-red-950/50 p-4 text-sm text-red-200">
-          {typeof error === "string" ? error : JSON.stringify(error)}
+          {typeof error === "string" ? error : "Something went wrong. Please try again."}
         </div>
       )}
 
       {caption && (
         <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-4">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs text-zinc-400">Generated Caption</span>
+            <span className="text-xs text-zinc-400">Your new caption</span>
             <button
               onClick={handleCopy}
               className="text-xs text-zinc-400 hover:text-white"
