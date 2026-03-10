@@ -1,7 +1,8 @@
-import { sql } from "./db";
+import { sql, ensureTables } from "./db";
 import type { TrainingExample, AddExampleInput } from "./types";
 
 export const getTrainingExamples = async (): Promise<readonly TrainingExample[]> => {
+  await ensureTables();
   const rows = await sql`SELECT id, system_prompt, user_prompt, assistant_response, created_at FROM training_examples ORDER BY created_at ASC`;
   return rows.map((r) => ({
     id: r.id as string,
@@ -15,6 +16,7 @@ export const getTrainingExamples = async (): Promise<readonly TrainingExample[]>
 export const addTrainingExample = async (
   input: AddExampleInput
 ): Promise<TrainingExample> => {
+  await ensureTables();
   const rows = await sql`INSERT INTO training_examples (system_prompt, user_prompt, assistant_response) VALUES (${input.systemPrompt}, ${input.userPrompt}, ${input.assistantResponse}) RETURNING id, system_prompt, user_prompt, assistant_response, created_at`;
   const r = rows[0];
   return {
@@ -27,6 +29,7 @@ export const addTrainingExample = async (
 };
 
 export const removeTrainingExample = async (id: string): Promise<boolean> => {
+  await ensureTables();
   const rows = await sql`DELETE FROM training_examples WHERE id = ${id} RETURNING id`;
   return rows.length > 0;
 };
