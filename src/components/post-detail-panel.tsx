@@ -35,7 +35,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
   return (
     <div className="fixed inset-y-0 right-0 z-40 flex w-[480px] flex-col border-l border-zinc-800 bg-zinc-950 shadow-2xl">
       <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-        <h2 className="text-sm font-semibold text-white">Post</h2>
+        <h2 className="text-sm font-semibold text-white">Post Details</h2>
         <button
           onClick={onClose}
           className="text-zinc-400 hover:text-white"
@@ -72,7 +72,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
 
         <div className="mt-4 space-y-3">
           <div className="flex items-center gap-3 text-xs text-zinc-500">
-            <span>{post.likesCount >= 0 ? `${post.likesCount.toLocaleString()} likes` : ""}</span>
+            <span>{post.likesCount.toLocaleString()} likes</span>
             {post.timestamp && (
               <span>{new Date(post.timestamp).toLocaleDateString()}</span>
             )}
@@ -97,27 +97,41 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
 
       <div className="border-t border-zinc-800 p-6">
         {post.addedToTraining ? (
-          <div className="flex items-center gap-2 text-sm text-green-400">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="h-4 w-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            Used as example
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-green-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Added to training
+            </div>
+            <p className="text-xs text-zinc-500">
+              This post is part of the AI&apos;s learning data. Note: OpenAI may
+              skip this image during training if it contains people or faces — this
+              is an automatic safety filter applied by OpenAI on all vision
+              fine-tuning data.
+            </p>
           </div>
         ) : !post.imageUrl ? (
-          <p className="text-sm text-orange-400">
-            This post has no image and cannot be used for training.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-orange-400">
+              Cannot train on this post
+            </p>
+            <p className="text-xs text-zinc-500">
+              This post has no image. Vision fine-tuning requires an image for
+              each training example.
+            </p>
+          </div>
         ) : (
           <>
             {error && (
@@ -128,10 +142,11 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
               disabled={adding}
               className="w-full rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {adding ? "Adding..." : "Use as example"}
+              {adding ? "Adding..." : "Add to training"}
             </button>
             <p className="mt-2 text-xs text-zinc-500">
-              Note: OpenAI may skip this example during training if the image contains people or faces.
+              OpenAI may skip this image during training if it contains people
+              or faces.
             </p>
           </>
         )}
