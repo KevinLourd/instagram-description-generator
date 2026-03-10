@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { InstagramPost } from "@/lib/types";
 import { PostDetailPanel } from "@/components/post-detail-panel";
+import { extractUsername } from "@/lib/instagram";
 
 const STORAGE_KEY = "lincoln_last_username";
 
@@ -48,7 +49,7 @@ const PostsPage = () => {
     setScrapeError("");
     setScrapeResult("");
     try {
-      const cleanUsername = target.replace("@", "").trim();
+      const cleanUsername = extractUsername(target);
       localStorage.setItem(STORAGE_KEY, cleanUsername);
       if (!usernameOverride) setUsername(cleanUsername);
 
@@ -163,17 +164,17 @@ const PostsPage = () => {
       {(showScrapeForm || posts.length === 0) && (
         <div className="mb-6 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
           <p className="mb-3 text-sm text-zinc-300">
-            Enter your Instagram username to import your posts.
+            Enter your Instagram username or profile URL to import your posts.
           </p>
           <div className="flex items-end gap-3">
             <div className="flex-1">
               <label className="mb-1 block text-xs text-zinc-400">
-                Username
+                Username or URL
               </label>
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. hasti.salar1"
+                placeholder="e.g. hasti.salar1 or instagram.com/hasti.salar1"
                 onKeyDown={(e) => e.key === "Enter" && handleScrape()}
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500"
               />
