@@ -27,6 +27,7 @@ describe("getTrainingExamples", () => {
         id: "abc-123",
         system_prompt: "sys",
         user_prompt: "prompt",
+        image_url: "https://example.com/photo.jpg",
         assistant_response: "response",
         created_at: new Date("2024-01-01T00:00:00Z"),
       },
@@ -37,6 +38,7 @@ describe("getTrainingExamples", () => {
       id: "abc-123",
       systemPrompt: "sys",
       userPrompt: "prompt",
+      imageUrl: "https://example.com/photo.jpg",
       assistantResponse: "response",
       createdAt: "2024-01-01T00:00:00.000Z",
     });
@@ -49,7 +51,8 @@ describe("addTrainingExample", () => {
       {
         id: "new-id",
         system_prompt: "You are a writer.",
-        user_prompt: "Beach photo",
+        user_prompt: "Write a caption.",
+        image_url: "https://example.com/beach.jpg",
         assistant_response: "Waves and wonder",
         created_at: new Date("2024-06-01T12:00:00Z"),
       },
@@ -57,12 +60,13 @@ describe("addTrainingExample", () => {
 
     const example = await addTrainingExample({
       systemPrompt: "You are a writer.",
-      userPrompt: "Beach photo",
+      userPrompt: "Write a caption.",
+      imageUrl: "https://example.com/beach.jpg",
       assistantResponse: "Waves and wonder",
     });
 
     expect(example.id).toBe("new-id");
-    expect(example.userPrompt).toBe("Beach photo");
+    expect(example.imageUrl).toBe("https://example.com/beach.jpg");
     expect(example.createdAt).toBeDefined();
   });
 });
@@ -82,19 +86,21 @@ describe("removeTrainingExample", () => {
 });
 
 describe("exportAsJsonl", () => {
-  it("exports examples in OpenAI JSONL chat format", async () => {
+  it("exports examples in OpenAI vision JSONL format", async () => {
     mockSql.mockResolvedValue([
       {
         id: "1",
         system_prompt: "You are a writer.",
-        user_prompt: "Beach photo",
+        user_prompt: "Write a caption.",
+        image_url: "https://example.com/beach.jpg",
         assistant_response: "Waves and wonder",
         created_at: new Date("2024-01-01"),
       },
       {
         id: "2",
         system_prompt: "You are a writer.",
-        user_prompt: "City night",
+        user_prompt: "Write a caption.",
+        image_url: "https://example.com/city.jpg",
         assistant_response: "Neon dreams",
         created_at: new Date("2024-01-02"),
       },
@@ -108,8 +114,42 @@ describe("exportAsJsonl", () => {
     expect(first.messages).toHaveLength(3);
     expect(first.messages[0].role).toBe("system");
     expect(first.messages[1].role).toBe("user");
-    expect(first.messages[1].content).toBe("Beach photo");
+    expect(first.messages[1].content).toEqual([
+      {
+        type: "image_url",
+        image_url: { url: "https://example.com/beach.jpg", detail: "low" },
+      },
+      {
+        type: "text",
+        text: "Write a caption.",
+      },
+    ]);
     expect(first.messages[2].role).toBe("assistant");
     expect(first.messages[2].content).toBe("Waves and wonder");
+  });
+
+  it("excludes examples without an image URL", async () => {
+    mockSql.mockResolvedValue([
+      {
+        id: "1",
+        system_prompt: "sys",
+        user_prompt: "Write a caption.",
+        image_url: "https://example.com/photo.jpg",
+        assistant_response: "Caption 1",
+        created_at: new Date("2024-01-01"),
+      },
+      {
+        id: "2",
+        system_prompt: "sys",
+        user_prompt: "Old text example",
+        image_url: "",
+        assistant_response: "Caption 2",
+        created_at: new Date("2024-01-02"),
+      },
+    ]);
+
+    const jsonl = await exportAsJsonl();
+    const lines = jsonl.split("\n");
+    expect(lines).toHaveLength(1);
   });
 });

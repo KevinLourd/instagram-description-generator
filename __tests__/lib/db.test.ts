@@ -17,7 +17,7 @@ describe("ensureTables", () => {
 
     await ensureTables();
 
-    expect(mockSql).toHaveBeenCalledTimes(3); // 2 tables + 1 index
+    expect(mockSql).toHaveBeenCalledTimes(4); // 2 tables + 1 index + 1 ALTER TABLE
   });
 
   it("only runs migration once (idempotent)", async () => {
@@ -27,6 +27,6 @@ describe("ensureTables", () => {
     await ensureTables();
     await ensureTables();
 
-    expect(mockSql).toHaveBeenCalledTimes(3); // still 3, not 6
+    expect(mockSql).toHaveBeenCalledTimes(4); // still 4, not 8
   });
 });

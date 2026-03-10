@@ -27,7 +27,7 @@ export const POST = async () => {
 
   const job = await openai.fineTuning.jobs.create({
     training_file: uploadedFile.id,
-    model: "gpt-4.1-2025-04-14",
+    model: "gpt-4o-2024-08-06",
   });
 
   return NextResponse.json({ job });

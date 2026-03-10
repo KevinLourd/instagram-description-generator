@@ -26,9 +26,13 @@ export const ensureTables = async () => {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       system_prompt TEXT NOT NULL,
       user_prompt TEXT NOT NULL,
+      image_url TEXT NOT NULL DEFAULT '',
       assistant_response TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
+  `;
+  await sql`
+    ALTER TABLE training_examples ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT ''
   `;
   migrated = true;
 };

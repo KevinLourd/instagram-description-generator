@@ -20,6 +20,7 @@ const statusColor = (status: string) => {
 export const FineTunePanel = () => {
   const [jobs, setJobs] = useState<FineTuneJob[]>([]);
   const [exampleCount, setExampleCount] = useState(0);
+  const [imageExampleCount, setImageExampleCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
@@ -33,8 +34,12 @@ export const FineTunePanel = () => {
       ]);
       const jobsData = await jobsRes.json();
       const trainingData = await trainingRes.json();
+      const examples = trainingData.examples ?? [];
       setJobs(jobsData.jobs ?? []);
-      setExampleCount(trainingData.examples?.length ?? 0);
+      setExampleCount(examples.length);
+      setImageExampleCount(
+        examples.filter((ex: { imageUrl?: string }) => ex.imageUrl).length
+      );
     } catch {
       /* ignore */
     } finally {
@@ -73,22 +78,27 @@ export const FineTunePanel = () => {
       <div>
         <h1 className="text-2xl font-bold text-white">Learn My Style</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          The AI will study your examples and learn to write like you.
+          The AI will study your photos and captions to learn your style.
           {" "}This usually takes 10 to 30 minutes.
         </p>
       </div>
 
       <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-4">
         <p className="text-sm text-zinc-300">
-          Examples available: <strong>{exampleCount}</strong>
+          Image examples available: <strong>{imageExampleCount}</strong>
+          {exampleCount > imageExampleCount && (
+            <span className="text-orange-400">
+              {" "}({exampleCount - imageExampleCount} text-only examples will be excluded)
+            </span>
+          )}
         </p>
-        {exampleCount < 10 ? (
+        {imageExampleCount < 10 ? (
           <p className="mt-2 text-sm text-yellow-400">
-            You need at least 10 examples. Go to{" "}
+            You need at least 10 image examples. Go to{" "}
             <a href="/posts" className="underline">
               My Posts
             </a>{" "}
-            to mark more posts as examples ({10 - exampleCount} more needed).
+            to mark more posts as examples ({10 - imageExampleCount} more needed).
           </p>
         ) : (
           <button
@@ -99,6 +109,18 @@ export const FineTunePanel = () => {
             {starting ? "Starting..." : "Start learning"}
           </button>
         )}
+      </div>
+
+      <div className="rounded-lg border border-orange-800 bg-orange-950/30 p-4">
+        <p className="text-sm font-medium text-orange-300">
+          Some examples may be skipped by OpenAI
+        </p>
+        <p className="mt-1 text-xs text-orange-200/70">
+          OpenAI automatically excludes images containing people, faces, children, or CAPTCHAs
+          from vision fine-tuning for safety reasons. If many of your Instagram photos include
+          people, fewer examples will actually be used for training. The job will still succeed
+          but with reduced training data.
+        </p>
       </div>
 
       {error && (
@@ -132,6 +154,12 @@ export const FineTunePanel = () => {
                   {statusLabel(job.status)}
                 </span>
               </div>
+              {job.trained_tokens != null && job.status === "succeeded" && (
+                <p className="mt-1 text-xs text-zinc-500">
+                  Trained on {job.trained_tokens.toLocaleString()} tokens
+                  {" "}(examples with people in the photo were automatically skipped by OpenAI)
+                </p>
+              )}
               {job.fine_tuned_model && (
                 <p className="mt-2 text-sm text-green-300">
                   Your style has been learned! You can now{" "}

@@ -3,11 +3,12 @@ import type { TrainingExample, AddExampleInput } from "./types";
 
 export const getTrainingExamples = async (): Promise<readonly TrainingExample[]> => {
   await ensureTables();
-  const rows = await sql`SELECT id, system_prompt, user_prompt, assistant_response, created_at FROM training_examples ORDER BY created_at ASC`;
+  const rows = await sql`SELECT id, system_prompt, user_prompt, image_url, assistant_response, created_at FROM training_examples ORDER BY created_at ASC`;
   return rows.map((r) => ({
     id: r.id as string,
     systemPrompt: r.system_prompt as string,
     userPrompt: r.user_prompt as string,
+    imageUrl: (r.image_url as string) ?? "",
     assistantResponse: r.assistant_response as string,
     createdAt: (r.created_at as Date).toISOString(),
   }));
@@ -17,12 +18,13 @@ export const addTrainingExample = async (
   input: AddExampleInput
 ): Promise<TrainingExample> => {
   await ensureTables();
-  const rows = await sql`INSERT INTO training_examples (system_prompt, user_prompt, assistant_response) VALUES (${input.systemPrompt}, ${input.userPrompt}, ${input.assistantResponse}) RETURNING id, system_prompt, user_prompt, assistant_response, created_at`;
+  const rows = await sql`INSERT INTO training_examples (system_prompt, user_prompt, image_url, assistant_response) VALUES (${input.systemPrompt}, ${input.userPrompt}, ${input.imageUrl}, ${input.assistantResponse}) RETURNING id, system_prompt, user_prompt, image_url, assistant_response, created_at`;
   const r = rows[0];
   return {
     id: r.id as string,
     systemPrompt: r.system_prompt as string,
     userPrompt: r.user_prompt as string,
+    imageUrl: (r.image_url as string) ?? "",
     assistantResponse: r.assistant_response as string,
     createdAt: (r.created_at as Date).toISOString(),
   };
@@ -37,11 +39,24 @@ export const removeTrainingExample = async (id: string): Promise<boolean> => {
 export const exportAsJsonl = async (): Promise<string> => {
   const examples = await getTrainingExamples();
   return examples
+    .filter((ex) => ex.imageUrl)
     .map((ex) =>
       JSON.stringify({
         messages: [
           { role: "system", content: ex.systemPrompt },
-          { role: "user", content: ex.userPrompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: { url: ex.imageUrl, detail: "low" },
+              },
+              {
+                type: "text",
+                text: ex.userPrompt,
+              },
+            ],
+          },
           { role: "assistant", content: ex.assistantResponse },
         ],
       })
