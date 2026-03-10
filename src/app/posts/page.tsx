@@ -14,15 +14,12 @@ const PostsPage = () => {
   const [posts, setPosts] = useState<InstagramPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<InstagramPost | null>(null);
-  const [filter, setFilter] = useState<"all" | "added" | "not-added">("all");
 
   const [scraping, setScraping] = useState(false);
-  const [scrapeError, setScrapeError] = useState("");
-  const [scrapeResult, setScrapeResult] = useState("");
+  const [training, setTraining] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [visibleCount, setVisibleCount] = useState(0);
   const staggerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [batchAdding, setBatchAdding] = useState(false);
-  const [batchResult, setBatchResult] = useState("");
 
   const fetchPosts = useCallback(async (stagger = false) => {
     setLoading(true);
@@ -58,40 +55,84 @@ const PostsPage = () => {
     }
   }, [visibleCount, posts.length]);
 
-  const handleScrape = async () => {
+  const handleSync = async () => {
     if (!INSTAGRAM_USERNAME) return;
     setScraping(true);
-    setScrapeError("");
-    setScrapeResult("");
+    setMessage(null);
     try {
       const res = await fetch("/api/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: INSTAGRAM_USERNAME,
-          resultsLimit: 50,
-        }),
+        body: JSON.stringify({ username: INSTAGRAM_USERNAME, resultsLimit: 50 }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setScrapeError(
-          typeof data.error === "string"
-            ? data.error
-            : "Something went wrong. Please try again."
-        );
+        setMessage({ type: "error", text: typeof data.error === "string" ? data.error : "Something went wrong." });
         return;
       }
-      if (data.added > 0) {
-        setScrapeResult(`${data.added} new post${data.added !== 1 ? "s" : ""} imported!`);
-      } else {
-        setScrapeResult("No new posts found. You're up to date!");
-      }
+      setMessage({
+        type: "success",
+        text: data.added > 0
+          ? `${data.added} new post${data.added !== 1 ? "s" : ""} imported!`
+          : "No new posts found. You're up to date!",
+      });
       fetchPosts(true);
     } catch {
-      setScrapeError("Connection issue. Please check your internet and try again.");
+      setMessage({ type: "error", text: "Connection issue. Please try again." });
     } finally {
       setScraping(false);
     }
+  };
+
+  const handleTrainAll = async () => {
+    const notTrained = posts.filter((p) => !p.addedToTraining && p.imageUrl);
+    if (notTrained.length === 0) {
+      setMessage({ type: "success", text: "All posts are already added to training." });
+      return;
+    }
+
+    setTraining(true);
+    setMessage(null);
+    let added = 0;
+    let skipped = 0;
+
+    for (const post of notTrained) {
+      try {
+        const res = await fetch(`/api/posts/${post.id}`, { method: "POST" });
+        if (res.ok) {
+          added++;
+        } else {
+          skipped++;
+        }
+      } catch {
+        skipped++;
+      }
+    }
+
+    // Now start fine-tuning
+    try {
+      const res = await fetch("/api/fine-tune", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({
+          type: "success",
+          text: `${added} post${added !== 1 ? "s" : ""} added to training${skipped > 0 ? ` (${skipped} skipped)` : ""}. Fine-tuning started! This takes 10-30 minutes.`,
+        });
+      } else {
+        setMessage({
+          type: added > 0 ? "success" : "error",
+          text: `${added} post${added !== 1 ? "s" : ""} added. ${data.error ?? "Could not start fine-tuning yet."}`,
+        });
+      }
+    } catch {
+      setMessage({
+        type: "success",
+        text: `${added} post${added !== 1 ? "s" : ""} added. Could not start fine-tuning — try again later.`,
+      });
+    }
+
+    fetchPosts();
+    setTraining(false);
   };
 
   const handleAdded = () => {
@@ -101,38 +142,9 @@ const PostsPage = () => {
     }
   };
 
-  const handleBatchAdd = async () => {
-    setBatchAdding(true);
-    setBatchResult("");
-    try {
-      const res = await fetch("/api/posts/batch-add", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) {
-        setBatchResult("Something went wrong. Please try again.");
-        return;
-      }
-      setBatchResult(
-        data.added > 0
-          ? `${data.added} post${data.added !== 1 ? "s" : ""} added as examples!`
-          : "All posts are already examples."
-      );
-      fetchPosts();
-    } catch {
-      setBatchResult("Connection issue. Please try again.");
-    } finally {
-      setBatchAdding(false);
-    }
-  };
-
-  const allFiltered = posts.filter((p) => {
-    if (filter === "added") return p.addedToTraining;
-    if (filter === "not-added") return !p.addedToTraining;
-    return true;
-  });
-  const filtered = allFiltered.slice(0, visibleCount);
-
+  const filtered = posts.slice(0, visibleCount);
   const addedCount = posts.filter((p) => p.addedToTraining).length;
-  const notAddedCount = posts.length - addedCount;
+  const notAddedCount = posts.filter((p) => !p.addedToTraining && p.imageUrl).length;
 
   return (
     <div className={selectedPost ? "mr-[480px]" : ""}>
@@ -142,93 +154,55 @@ const PostsPage = () => {
           <h1 className="text-2xl font-bold text-white">My Posts</h1>
           <p className="mt-1 text-sm text-zinc-400">
             {posts.length === 0
-              ? "Import your Instagram posts to get started."
-              : `${posts.length} post${posts.length !== 1 ? "s" : ""} — ${addedCount} used as examples, ${notAddedCount} not yet used`}
+              ? "Sync your Instagram posts to get started."
+              : `${posts.length} post${posts.length !== 1 ? "s" : ""} — ${addedCount} trained, ${notAddedCount} ready to train`}
           </p>
         </div>
-        <button
-          onClick={handleScrape}
-          disabled={scraping || !INSTAGRAM_USERNAME}
-          className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className={`h-4 w-4 ${scraping ? "animate-spin" : ""}`}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
-            />
-          </svg>
-          {scraping
-            ? "Importing..."
-            : posts.length === 0
-              ? "Import my posts"
-              : "Check for new posts"}
-        </button>
-      </div>
-
-      {/* Result message */}
-      {scrapeResult && (
-        <div className="mb-4 rounded-lg border border-green-800 bg-green-950/50 p-3 text-sm text-green-200">
-          {scrapeResult}
-        </div>
-      )}
-
-      {/* Scrape error */}
-      {scrapeError && (
-        <div className="mb-4 rounded-lg border border-red-800 bg-red-950/50 p-3 text-sm text-red-200">
-          {scrapeError}
-        </div>
-      )}
-
-      {/* Batch result */}
-      {batchResult && (
-        <div className="mb-4 rounded-lg border border-green-800 bg-green-950/50 p-3 text-sm text-green-200">
-          {batchResult}
-        </div>
-      )}
-
-      {/* Filter tabs + batch button */}
-      {posts.length > 0 && (
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <div className="flex gap-1 rounded-lg bg-zinc-900 p-1">
-            {(
-              [
-                { key: "all", label: `All (${posts.length})` },
-                { key: "added", label: `Examples (${addedCount})` },
-                { key: "not-added", label: `Not used yet (${notAddedCount})` },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setFilter(tab.key)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                  filter === tab.key
-                    ? "bg-zinc-700 text-white"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2">
           {notAddedCount > 0 && (
             <button
-              onClick={handleBatchAdd}
-              disabled={batchAdding}
-              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:opacity-50"
+              onClick={handleTrainAll}
+              disabled={training}
+              className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {batchAdding
-                ? "Adding..."
-                : `Add all ${notAddedCount} as examples`}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m16.5 0H21m-1.5 0H12m-8.457 3.077l1.41-.513m14.095-5.13l1.41-.513M5.106 17.785l1.15-.964m11.49-9.642l1.149-.964M7.501 19.795l.75-1.3m7.5-12.99l.75-1.3m-6.063 16.658l.26-1.477m2.605-14.772l.26-1.477m0 17.726l-.26-1.477M10.698 4.614l-.26-1.477M16.5 19.794l-.75-1.299M7.5 4.205L12 12m6.894 5.785l-1.149-.964M6.256 7.178l-1.15-.964m15.352 8.864l-1.41-.513M4.954 9.435l-1.41-.514M12.002 12l-3.75 6.495" />
+              </svg>
+              {training ? "Training..." : `Train ${notAddedCount} new post${notAddedCount !== 1 ? "s" : ""}`}
             </button>
           )}
+          <button
+            onClick={handleSync}
+            disabled={scraping || !INSTAGRAM_USERNAME}
+            className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className={`h-4 w-4 ${scraping ? "animate-spin" : ""}`}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"
+              />
+            </svg>
+            {scraping ? "Syncing..." : posts.length === 0 ? "Sync Instagram" : "Sync"}
+          </button>
+        </div>
+      </div>
+
+      {/* Message */}
+      {message && (
+        <div className={`mb-4 rounded-lg border p-3 text-sm ${
+          message.type === "success"
+            ? "border-green-800 bg-green-950/50 text-green-200"
+            : "border-red-800 bg-red-950/50 text-red-200"
+        }`}>
+          {message.text}
         </div>
       )}
 
@@ -237,9 +211,7 @@ const PostsPage = () => {
         <p className="text-sm text-zinc-400">Loading...</p>
       ) : filtered.length === 0 ? (
         <p className="text-sm text-zinc-400">
-          {posts.length === 0
-            ? "No posts yet. Import your Instagram posts above to get started."
-            : "No posts match this filter."}
+          No posts yet. Click &quot;Sync Instagram&quot; to import your posts.
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-zinc-800">
@@ -250,13 +222,13 @@ const PostsPage = () => {
                   Photo
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400">
-                  Description
+                  Caption
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-zinc-400">
                   Likes
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-zinc-400">
-                  Status
+                  Training
                 </th>
               </tr>
             </thead>
@@ -295,16 +267,20 @@ const PostsPage = () => {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-sm text-zinc-400">
-                    {post.likesCount >= 0 ? post.likesCount.toLocaleString() : "—"}
+                    {post.likesCount.toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {post.addedToTraining ? (
                       <span className="inline-flex items-center rounded-full bg-green-900/30 px-2 py-0.5 text-xs text-green-400">
-                        Example
+                        Trained
+                      </span>
+                    ) : !post.imageUrl ? (
+                      <span className="inline-flex items-center rounded-full bg-orange-900/30 px-2 py-0.5 text-xs text-orange-400">
+                        No image
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-                        Not used yet
+                        Not trained
                       </span>
                     )}
                   </td>
