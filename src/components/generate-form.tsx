@@ -121,9 +121,9 @@ export const GenerateForm = () => {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] gap-8">
+    <div className="flex min-h-[calc(100vh-4rem)] flex-col gap-8 lg:flex-row">
       {/* Left side — photo input */}
-      <div className="flex w-1/2 flex-col">
+      <div className="flex w-full flex-col lg:w-1/2">
         <h1 className="text-2xl font-bold text-white">Write a Caption</h1>
         <p className="mt-1 text-sm text-zinc-400">
           Upload a photo and get a caption in your style, Hasti.
@@ -220,7 +220,7 @@ export const GenerateForm = () => {
       </div>
 
       {/* Right side — caption output */}
-      <div className="flex w-1/2 flex-col">
+      <div className="flex w-full flex-col lg:w-1/2">
         <h2 className="text-lg font-semibold text-white">Your Caption</h2>
 
         {error && (

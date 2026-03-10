@@ -25,7 +25,7 @@ const RootLayout = ({ children }: { readonly children: React.ReactNode }) => {
       <body className="min-h-screen bg-zinc-950 text-white antialiased">
         <AuthGate>
           <Sidebar />
-          <main className="ml-56 min-h-screen p-8">{children}</main>
+          <main className="min-h-screen p-4 pt-16 md:ml-56 md:p-8">{children}</main>
         </AuthGate>
       </body>
     </html>

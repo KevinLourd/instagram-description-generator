@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { InstallPrompt } from "./install-prompt";
@@ -32,56 +33,90 @@ const links = [
 
 export const Sidebar = () => {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
   return (
-    <aside className="fixed left-0 top-0 z-30 flex h-screen w-56 flex-col border-r border-zinc-800 bg-zinc-950">
-      <div className="flex items-center gap-3 px-5 py-5">
-        <InstagramLogo />
-        <div>
-          <span className="text-sm font-bold leading-tight text-white">
-            Hasti&apos;s
-          </span>
-          <p className="text-xs text-zinc-500">Caption Writer</p>
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-40 rounded-lg border border-zinc-800 bg-zinc-950 p-2 md:hidden"
+        aria-label="Open menu"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 text-white">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </button>
+
+      {/* Backdrop */}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside className={`fixed left-0 top-0 z-40 flex h-screen w-56 flex-col border-r border-zinc-800 bg-zinc-950 transition-transform duration-200 ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+        {/* Mobile close button */}
+        <button
+          onClick={() => setOpen(false)}
+          className="absolute right-3 top-4 text-zinc-400 hover:text-white md:hidden"
+          aria-label="Close menu"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="flex items-center gap-3 px-5 py-5">
+          <InstagramLogo />
+          <div>
+            <span className="text-sm font-bold leading-tight text-white">
+              Hasti&apos;s
+            </span>
+            <p className="text-xs text-zinc-500">Caption Writer</p>
+          </div>
         </div>
-      </div>
-      <nav className="flex flex-1 flex-col gap-1 px-3">
-        {links.map((link) => {
-          const isActive =
-            link.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(link.href);
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                isActive
-                  ? "bg-zinc-800 text-white font-medium"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
-              }`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="h-4 w-4 shrink-0"
+        <nav className="flex flex-1 flex-col gap-1 px-3">
+          {links.map((link) => {
+            const isActive =
+              link.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "bg-zinc-800 text-white font-medium"
+                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                }`}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d={link.icon}
-                />
-              </svg>
-              {link.label}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="px-3 py-4">
-        <InstallPrompt />
-      </div>
-    </aside>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="h-4 w-4 shrink-0"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d={link.icon}
+                  />
+                </svg>
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="px-3 py-4">
+          <InstallPrompt />
+        </div>
+      </aside>
+    </>
   );
 };
