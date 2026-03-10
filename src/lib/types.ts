@@ -42,3 +42,18 @@ export type FineTuneJob = {
   readonly fine_tuned_model: string | null;
   readonly created_at: number;
 };
+
+export const scrapeSchema = z.object({
+  username: z.string().min(1, "Instagram username is required"),
+  resultsLimit: z.number().min(1).max(200).default(50),
+});
+
+export type ScrapeInput = z.infer<typeof scrapeSchema>;
+
+export type InstagramPost = {
+  readonly caption: string;
+  readonly imageUrl: string;
+  readonly timestamp: string;
+  readonly likesCount: number;
+  readonly url: string;
+};
