@@ -2,12 +2,9 @@ import { NextResponse } from "next/server";
 import { getOpenAIClient } from "@/lib/openai";
 import { exportAsJsonl, getTrainingExamples } from "@/lib/training-store";
 
-// Downloading 40+ images and uploading to OpenAI takes time
-export const maxDuration = 120;
-
 export const POST = async () => {
   const examples = await getTrainingExamples();
-  const withImages = examples.filter((e) => e.imageUrl);
+  const withImages = examples.filter((e) => e.imageBase64);
   if (withImages.length < 10) {
     return NextResponse.json(
       {

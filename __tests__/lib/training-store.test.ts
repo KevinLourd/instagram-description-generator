@@ -3,9 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const { mockSql } = vi.hoisted(() => ({ mockSql: vi.fn() }));
 vi.mock("@/lib/db", () => ({ sql: mockSql, ensureTables: vi.fn() }));
 
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
-
 import {
   getTrainingExamples,
   addTrainingExample,
@@ -15,13 +12,6 @@ import {
 
 beforeEach(() => {
   mockSql.mockReset();
-  mockFetch.mockReset();
-  // Default: return a small fake image for any fetch
-  mockFetch.mockResolvedValue({
-    ok: true,
-    headers: { get: () => "image/jpeg" },
-    arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
-  });
 });
 
 describe("getTrainingExamples", () => {
@@ -38,6 +28,7 @@ describe("getTrainingExamples", () => {
         system_prompt: "sys",
         user_prompt: "prompt",
         image_url: "https://example.com/photo.jpg",
+        image_base64: "data:image/jpeg;base64,abc123",
         assistant_response: "response",
         created_at: new Date("2024-01-01T00:00:00Z"),
       },
@@ -49,6 +40,7 @@ describe("getTrainingExamples", () => {
       systemPrompt: "sys",
       userPrompt: "prompt",
       imageUrl: "https://example.com/photo.jpg",
+      imageBase64: "data:image/jpeg;base64,abc123",
       assistantResponse: "response",
       createdAt: "2024-01-01T00:00:00.000Z",
     });
@@ -63,6 +55,7 @@ describe("addTrainingExample", () => {
         system_prompt: "You are a writer.",
         user_prompt: "Write a caption.",
         image_url: "https://example.com/beach.jpg",
+        image_base64: "data:image/jpeg;base64,abc",
         assistant_response: "Waves and wonder",
         created_at: new Date("2024-06-01T12:00:00Z"),
       },
@@ -72,11 +65,13 @@ describe("addTrainingExample", () => {
       systemPrompt: "You are a writer.",
       userPrompt: "Write a caption.",
       imageUrl: "https://example.com/beach.jpg",
+      imageBase64: "data:image/jpeg;base64,abc",
       assistantResponse: "Waves and wonder",
     });
 
     expect(example.id).toBe("new-id");
     expect(example.imageUrl).toBe("https://example.com/beach.jpg");
+    expect(example.imageBase64).toBe("data:image/jpeg;base64,abc");
     expect(example.createdAt).toBeDefined();
   });
 });
@@ -96,13 +91,14 @@ describe("removeTrainingExample", () => {
 });
 
 describe("exportAsJsonl", () => {
-  it("exports examples in OpenAI vision JSONL format", async () => {
+  it("exports examples using stored base64 in JSONL format", async () => {
     mockSql.mockResolvedValue([
       {
         id: "1",
         system_prompt: "You are a writer.",
         user_prompt: "Write a caption.",
         image_url: "https://example.com/beach.jpg",
+        image_base64: "data:image/jpeg;base64,beachdata",
         assistant_response: "Waves and wonder",
         created_at: new Date("2024-01-01"),
       },
@@ -111,6 +107,7 @@ describe("exportAsJsonl", () => {
         system_prompt: "You are a writer.",
         user_prompt: "Write a caption.",
         image_url: "https://example.com/city.jpg",
+        image_base64: "data:image/jpeg;base64,citydata",
         assistant_response: "Neon dreams",
         created_at: new Date("2024-01-02"),
       },
@@ -125,20 +122,21 @@ describe("exportAsJsonl", () => {
     expect(first.messages[0].role).toBe("system");
     expect(first.messages[1].role).toBe("user");
     expect(first.messages[1].content[0].type).toBe("image_url");
-    expect(first.messages[1].content[0].image_url.url).toMatch(/^data:image\/jpeg;base64,/);
+    expect(first.messages[1].content[0].image_url.url).toBe("data:image/jpeg;base64,beachdata");
     expect(first.messages[1].content[0].image_url.detail).toBe("low");
     expect(first.messages[1].content[1]).toEqual({ type: "text", text: "Write a caption." });
     expect(first.messages[2].role).toBe("assistant");
     expect(first.messages[2].content).toBe("Waves and wonder");
   });
 
-  it("excludes examples without an image URL", async () => {
+  it("excludes examples without stored base64", async () => {
     mockSql.mockResolvedValue([
       {
         id: "1",
         system_prompt: "sys",
         user_prompt: "Write a caption.",
         image_url: "https://example.com/photo.jpg",
+        image_base64: "data:image/jpeg;base64,abc",
         assistant_response: "Caption 1",
         created_at: new Date("2024-01-01"),
       },
@@ -147,6 +145,7 @@ describe("exportAsJsonl", () => {
         system_prompt: "sys",
         user_prompt: "Old text example",
         image_url: "",
+        image_base64: "",
         assistant_response: "Caption 2",
         created_at: new Date("2024-01-02"),
       },
@@ -155,22 +154,5 @@ describe("exportAsJsonl", () => {
     const jsonl = await exportAsJsonl();
     const lines = jsonl.split("\n");
     expect(lines).toHaveLength(1);
-  });
-
-  it("skips examples whose images fail to download", async () => {
-    mockSql.mockResolvedValue([
-      {
-        id: "1",
-        system_prompt: "sys",
-        user_prompt: "Write a caption.",
-        image_url: "https://example.com/expired.jpg",
-        assistant_response: "Caption 1",
-        created_at: new Date("2024-01-01"),
-      },
-    ]);
-    mockFetch.mockResolvedValue({ ok: false, status: 403 });
-
-    const jsonl = await exportAsJsonl();
-    expect(jsonl).toBe("");
   });
 });

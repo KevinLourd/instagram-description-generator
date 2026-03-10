@@ -37,6 +37,18 @@ const run = async () => {
   await sql`
     ALTER TABLE training_examples ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT ''
   `;
+  await sql`
+    ALTER TABLE training_examples ADD COLUMN IF NOT EXISTS image_base64 TEXT NOT NULL DEFAULT ''
+  `;
+
+  // Reset training examples that have no base64 data (from before the migration)
+  const stale = await sql`SELECT count(*) as cnt FROM training_examples WHERE image_base64 = ''`;
+  const staleCount = Number(stale[0]?.cnt ?? 0);
+  if (staleCount > 0) {
+    await sql`DELETE FROM training_examples WHERE image_base64 = ''`;
+    await sql`UPDATE scraped_posts SET added_to_training = false WHERE added_to_training = true`;
+    console.log(`Reset ${staleCount} stale training examples (no base64). Posts marked as not trained.`);
+  }
 
   console.log("Migration complete");
 };

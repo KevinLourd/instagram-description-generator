@@ -34,5 +34,8 @@ export const ensureTables = async () => {
   await sql`
     ALTER TABLE training_examples ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT ''
   `;
+  await sql`
+    ALTER TABLE training_examples ADD COLUMN IF NOT EXISTS image_base64 TEXT NOT NULL DEFAULT ''
+  `;
   migrated = true;
 };
