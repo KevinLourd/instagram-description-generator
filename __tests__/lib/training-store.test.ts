@@ -3,6 +3,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const { mockSql } = vi.hoisted(() => ({ mockSql: vi.fn() }));
 vi.mock("@/lib/db", () => ({ sql: mockSql, ensureTables: vi.fn() }));
 
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
+
 import {
   getTrainingExamples,
   addTrainingExample,
@@ -12,6 +15,13 @@ import {
 
 beforeEach(() => {
   mockSql.mockReset();
+  mockFetch.mockReset();
+  // Default: return a small fake image for any fetch
+  mockFetch.mockResolvedValue({
+    ok: true,
+    headers: { get: () => "image/jpeg" },
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+  });
 });
 
 describe("getTrainingExamples", () => {
@@ -114,16 +124,10 @@ describe("exportAsJsonl", () => {
     expect(first.messages).toHaveLength(3);
     expect(first.messages[0].role).toBe("system");
     expect(first.messages[1].role).toBe("user");
-    expect(first.messages[1].content).toEqual([
-      {
-        type: "image_url",
-        image_url: { url: "https://example.com/beach.jpg", detail: "low" },
-      },
-      {
-        type: "text",
-        text: "Write a caption.",
-      },
-    ]);
+    expect(first.messages[1].content[0].type).toBe("image_url");
+    expect(first.messages[1].content[0].image_url.url).toMatch(/^data:image\/jpeg;base64,/);
+    expect(first.messages[1].content[0].image_url.detail).toBe("low");
+    expect(first.messages[1].content[1]).toEqual({ type: "text", text: "Write a caption." });
     expect(first.messages[2].role).toBe("assistant");
     expect(first.messages[2].content).toBe("Waves and wonder");
   });
@@ -151,5 +155,22 @@ describe("exportAsJsonl", () => {
     const jsonl = await exportAsJsonl();
     const lines = jsonl.split("\n");
     expect(lines).toHaveLength(1);
+  });
+
+  it("skips examples whose images fail to download", async () => {
+    mockSql.mockResolvedValue([
+      {
+        id: "1",
+        system_prompt: "sys",
+        user_prompt: "Write a caption.",
+        image_url: "https://example.com/expired.jpg",
+        assistant_response: "Caption 1",
+        created_at: new Date("2024-01-01"),
+      },
+    ]);
+    mockFetch.mockResolvedValue({ ok: false, status: 403 });
+
+    const jsonl = await exportAsJsonl();
+    expect(jsonl).toBe("");
   });
 });
