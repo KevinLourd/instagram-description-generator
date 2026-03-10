@@ -48,7 +48,7 @@ const PostsPage = () => {
     }
   }, []);
 
-  // Check if there's an active or completed fine-tuning job on mount
+  // Check if there's an active, completed, or failed fine-tuning job on mount
   const checkJobStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/fine-tune");
@@ -64,6 +64,16 @@ const PostsPage = () => {
       if (activeJob) {
         setFineTuneJobId(activeJob.id);
         setTrainingStatus("fine-tuning");
+        return;
+      }
+
+      // If the most recent job failed and there's no succeeded job, show error
+      if (!hasSucceeded && jobs.length > 0) {
+        const mostRecent = jobs[0] as { status: string; error?: { message?: string } };
+        if (mostRecent.status === "failed" || mostRecent.status === "cancelled") {
+          setTrainingStatus("error");
+          setMessage({ type: "error", text: `Last training failed: ${mostRecent.error?.message ?? "Unknown error"}. Click "Retry training" to try again.` });
+        }
       }
     } catch {
       /* ignore */
@@ -196,6 +206,24 @@ const PostsPage = () => {
     }
   };
 
+  const handleRetryTraining = async () => {
+    setTrainingStatus("fine-tuning");
+    setMessage(null);
+    try {
+      const res = await fetch("/api/fine-tune", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.job?.id) {
+        setFineTuneJobId(data.job.id);
+      } else {
+        setTrainingStatus("error");
+        setMessage({ type: "error", text: data.error ?? "Could not start fine-tuning." });
+      }
+    } catch {
+      setTrainingStatus("error");
+      setMessage({ type: "error", text: "Could not start fine-tuning." });
+    }
+  };
+
   const handleAdded = () => {
     fetchPosts();
     if (selectedPost) {
@@ -214,6 +242,7 @@ const PostsPage = () => {
     if (!post.addedToTraining) return "not-trained";
     if (isFineTuning) return "training";
     if (hasTrainedModel) return "trained";
+    if (trainingStatus === "error") return "failed";
     return "training"; // added but no succeeded job yet
   };
 
@@ -281,6 +310,17 @@ const PostsPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 0015 0m-15 0a7.5 7.5 0 1115 0m-15 0H3m16.5 0H21m-1.5 0H12m-8.457 3.077l1.41-.513m14.095-5.13l1.41-.513M5.106 17.785l1.15-.964m11.49-9.642l1.149-.964M7.501 19.795l.75-1.3m7.5-12.99l.75-1.3m-6.063 16.658l.26-1.477m2.605-14.772l.26-1.477m0 17.726l-.26-1.477M10.698 4.614l-.26-1.477M16.5 19.794l-.75-1.299M7.5 4.205L12 12m6.894 5.785l-1.149-.964M6.256 7.178l-1.15-.964m15.352 8.864l-1.41-.513M4.954 9.435l-1.41-.514M12.002 12l-3.75 6.495" />
               </svg>
               Train {notAddedCount} new post{notAddedCount !== 1 ? "s" : ""}
+            </button>
+          )}
+          {trainingStatus === "error" && addedCount > 0 && !isTrainingBusy && (
+            <button
+              onClick={handleRetryTraining}
+              className="flex items-center gap-2 rounded-lg bg-yellow-600 px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+              </svg>
+              Retry training
             </button>
           )}
           <button
@@ -398,6 +438,11 @@ const PostsPage = () => {
                       {status === "not-trained" && (
                         <span className="inline-flex items-center rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
                           Not trained
+                        </span>
+                      )}
+                      {status === "failed" && (
+                        <span className="inline-flex items-center rounded-full bg-red-900/30 px-2 py-0.5 text-xs text-red-400">
+                          Failed
                         </span>
                       )}
                       {status === "no-image" && (
