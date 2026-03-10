@@ -1,36 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import type { InstagramPost } from "@/lib/types";
 
 type Props = {
   readonly post: InstagramPost;
   readonly onClose: () => void;
-  readonly onAdded: () => void;
 };
 
-export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
-  const [adding, setAdding] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleAddToTraining = async () => {
-    setAdding(true);
-    setError("");
-    try {
-      const res = await fetch(`/api/posts/${post.id}`, { method: "POST" });
-      if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Something went wrong. Please try again.");
-        return;
-      }
-      onAdded();
-    } catch {
-      setError("Connection issue. Please try again.");
-    } finally {
-      setAdding(false);
-    }
-  };
+export const PostDetailPanel = ({ post, onClose }: Props) => {
 
   return (
     <div className="fixed inset-y-0 right-0 z-40 flex w-full flex-col border-l border-zinc-800 bg-zinc-950 shadow-2xl md:w-[480px]">
@@ -95,62 +73,6 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
         </div>
       </div>
 
-      <div className="border-t border-zinc-800 p-6">
-        {post.addedToTraining ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-green-400">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="h-4 w-4"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              Added to training
-            </div>
-            <p className="text-xs text-zinc-500">
-              This post is part of the AI&apos;s learning data. Note: OpenAI may
-              skip this image during training if it contains people or faces — this
-              is an automatic safety filter applied by OpenAI on all vision
-              fine-tuning data.
-            </p>
-          </div>
-        ) : !post.imageUrl ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-orange-400">
-              Cannot train on this post
-            </p>
-            <p className="text-xs text-zinc-500">
-              This post has no image. Vision fine-tuning requires an image for
-              each training example.
-            </p>
-          </div>
-        ) : (
-          <>
-            {error && (
-              <p className="mb-2 text-sm text-red-400">{error}</p>
-            )}
-            <button
-              onClick={handleAddToTraining}
-              disabled={adding}
-              className="w-full rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {adding ? "Adding..." : "Add to training"}
-            </button>
-            <p className="mt-2 text-xs text-zinc-500">
-              OpenAI may skip this image during training if it contains people
-              or faces.
-            </p>
-          </>
-        )}
-      </div>
     </div>
   );
 };
