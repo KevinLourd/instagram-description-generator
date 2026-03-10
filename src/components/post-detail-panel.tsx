@@ -33,7 +33,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 flex w-[480px] flex-col border-l border-zinc-800 bg-zinc-950 shadow-2xl">
+    <div className="fixed inset-y-0 right-0 z-40 flex w-full flex-col border-l border-zinc-800 bg-zinc-950 shadow-2xl md:w-[480px]">
       <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
         <h2 className="text-sm font-semibold text-white">Post Details</h2>
         <button

@@ -247,7 +247,7 @@ const PostsPage = () => {
   };
 
   return (
-    <div className={selectedPost ? "mr-[480px]" : ""}>
+    <div className={selectedPost ? "md:mr-[480px]" : ""}>
       {/* Training progress banner */}
       {trainingStatus === "adding" && (
         <div className="mb-4 rounded-lg border border-blue-800 bg-blue-950/50 p-4">
@@ -291,7 +291,7 @@ const PostsPage = () => {
       )}
 
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">My Posts</h1>
           <p className="mt-1 text-sm text-zinc-400">
@@ -300,7 +300,7 @@ const PostsPage = () => {
               : `${posts.length} post${posts.length !== 1 ? "s" : ""} — ${addedCount} in training, ${notAddedCount} ready to add`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {notAddedCount > 0 && !isTrainingBusy && (
             <button
               onClick={handleTrainAll}
@@ -366,8 +366,8 @@ const PostsPage = () => {
           No posts yet. Click &quot;Sync Instagram&quot; to import your posts.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-zinc-800">
-          <table className="w-full">
+        <div className="overflow-x-auto rounded-lg border border-zinc-800">
+          <table className="w-full min-w-[500px]">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-900/50">
                 <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400">
