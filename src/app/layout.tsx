@@ -8,8 +8,8 @@ const FAVICON_URL = LOGO_TOKEN
   : undefined;
 
 export const metadata: Metadata = {
-  title: "Instagram Description Generator",
-  description: "Generate Instagram captions using a fine-tuned model",
+  title: "Hasti's Caption Writer",
+  description: "AI-powered Instagram captions in Hasti's style",
   icons: FAVICON_URL ? { icon: FAVICON_URL } : undefined,
 };
 

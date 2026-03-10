@@ -40,9 +40,9 @@ export const Sidebar = () => {
         <InstagramLogo />
         <div>
           <span className="text-sm font-bold leading-tight text-white">
-            Instagram
+            Hasti&apos;s
           </span>
-          <p className="text-xs text-zinc-500">Description Generator</p>
+          <p className="text-xs text-zinc-500">Caption Writer</p>
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
