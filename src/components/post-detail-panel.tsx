@@ -20,12 +20,12 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
       const res = await fetch(`/api/posts/${post.id}`, { method: "POST" });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to add");
+        setError(data.error ?? "Something went wrong. Please try again.");
         return;
       }
       onAdded();
     } catch {
-      setError("Network error");
+      setError("Connection issue. Please try again.");
     } finally {
       setAdding(false);
     }
@@ -34,7 +34,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
   return (
     <div className="fixed inset-y-0 right-0 z-40 flex w-[480px] flex-col border-l border-zinc-800 bg-zinc-950 shadow-2xl">
       <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-        <h2 className="text-sm font-semibold text-white">Post Detail</h2>
+        <h2 className="text-sm font-semibold text-white">Post</h2>
         <button
           onClick={onClose}
           className="text-zinc-400 hover:text-white"
@@ -84,7 +84,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
               rel="noopener noreferrer"
               className="inline-block text-xs text-zinc-500 hover:text-zinc-300"
             >
-              View on Instagram
+              See on Instagram
             </a>
           )}
         </div>
@@ -107,7 +107,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
                 d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            Added to training data
+            Used as example
           </div>
         ) : (
           <>
@@ -119,7 +119,7 @@ export const PostDetailPanel = ({ post, onClose, onAdded }: Props) => {
               disabled={adding}
               className="w-full rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {adding ? "Adding..." : "Add to Fine-Tuning"}
+              {adding ? "Adding..." : "Use as example"}
             </button>
           </>
         )}
