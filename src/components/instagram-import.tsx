@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { InstagramPost } from "@/lib/types";
+import { extractUsername } from "@/lib/instagram";
 
 const DEFAULT_SYSTEM_PROMPT =
   "You are an expert Instagram caption writer. Write engaging, authentic captions that match the style and tone of this account.";
@@ -30,7 +31,7 @@ export const InstagramImport = ({ onImported }: Props) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: username.replace("@", "").trim(),
+          username: extractUsername(username),
           resultsLimit: limit,
         }),
       });
@@ -201,7 +202,7 @@ export const InstagramImport = ({ onImported }: Props) => {
           <input
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Instagram username (e.g. hasti.salar1)"
+            placeholder="Username or URL (e.g. hasti.salar1 or instagram.com/hasti.salar1)"
             className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500"
           />
         </div>

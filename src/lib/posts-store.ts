@@ -1,80 +1,50 @@
-import { readFile, writeFile } from "fs/promises";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import type { InstagramPost, ScrapedPostsData } from "./types";
-import { scrapedPostsSchema } from "./types";
+import { sql } from "./db";
+import type { InstagramPost } from "./types";
 
-const DEFAULT_DATA_PATH = path.join(
-  process.cwd(),
-  "data",
-  "scraped-posts.json"
-);
+const rowToPost = (r: Record<string, unknown>): InstagramPost => ({
+  id: r.id as string,
+  caption: r.caption as string,
+  imageUrl: r.image_url as string,
+  timestamp: r.timestamp as string,
+  likesCount: r.likes_count as number,
+  url: r.url as string,
+  addedToTraining: r.added_to_training as boolean,
+});
 
-const readStore = async (
-  filePath = DEFAULT_DATA_PATH
-): Promise<InstagramPost[]> => {
-  try {
-    const raw = await readFile(filePath, "utf-8");
-    const data = scrapedPostsSchema.parse(JSON.parse(raw));
-    return data.posts;
-  } catch {
-    return [];
-  }
-};
-
-const writeStore = async (
-  posts: InstagramPost[],
-  filePath = DEFAULT_DATA_PATH
-): Promise<void> => {
-  const data: ScrapedPostsData = { posts: [...posts] };
-  await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
-};
-
-export const getScrapedPosts = async (
-  filePath = DEFAULT_DATA_PATH
-): Promise<InstagramPost[]> => {
-  return readStore(filePath);
+export const getScrapedPosts = async (): Promise<InstagramPost[]> => {
+  const rows = await sql`SELECT id, caption, image_url, timestamp, likes_count, url, added_to_training FROM scraped_posts ORDER BY created_at DESC`;
+  return rows.map(rowToPost);
 };
 
 export const addScrapedPosts = async (
-  newPosts: Omit<InstagramPost, "id" | "addedToTraining">[],
-  filePath = DEFAULT_DATA_PATH
+  newPosts: Omit<InstagramPost, "id" | "addedToTraining">[]
 ): Promise<InstagramPost[]> => {
-  const existing = await readStore(filePath);
-  const existingUrls = new Set(existing.map((p) => p.url));
+  if (newPosts.length === 0) return [];
 
-  const toAdd: InstagramPost[] = newPosts
-    .filter((p) => !existingUrls.has(p.url))
-    .map((p) => ({
-      ...p,
-      id: uuidv4(),
-      addedToTraining: false,
-    }));
-
-  const updated = [...existing, ...toAdd];
-  await writeStore(updated, filePath);
-  return toAdd;
+  const added: InstagramPost[] = [];
+  for (const p of newPosts) {
+    try {
+      const rows = await sql`INSERT INTO scraped_posts (caption, image_url, timestamp, likes_count, url) VALUES (${p.caption}, ${p.imageUrl}, ${p.timestamp}, ${p.likesCount}, ${p.url}) ON CONFLICT (url) DO NOTHING RETURNING id, caption, image_url, timestamp, likes_count, url, added_to_training`;
+      if (rows.length > 0) {
+        added.push(rowToPost(rows[0]));
+      }
+    } catch {
+      // skip duplicates
+    }
+  }
+  return added;
 };
 
 export const markAsTraining = async (
-  postId: string,
-  filePath = DEFAULT_DATA_PATH
+  postId: string
 ): Promise<InstagramPost | null> => {
-  const posts = await readStore(filePath);
-  const index = posts.findIndex((p) => p.id === postId);
-  if (index === -1) return null;
-
-  const updated = posts.map((p) =>
-    p.id === postId ? { ...p, addedToTraining: true } : p
-  );
-  await writeStore(updated, filePath);
-  return updated[index];
+  const rows = await sql`UPDATE scraped_posts SET added_to_training = true WHERE id = ${postId} RETURNING id, caption, image_url, timestamp, likes_count, url, added_to_training`;
+  return rows.length > 0 ? rowToPost(rows[0]) : null;
 };
 
 export const getPostById = async (
-  postId: string,
-  filePath = DEFAULT_DATA_PATH
+  postId: string
 ): Promise<InstagramPost | null> => {
-  const posts = await readStore(filePath);
-  return posts.find((p) => p.id === postId) ?? null;
+  const rows = await sql`SELECT id, caption, image_url, timestamp, likes_count, url, added_to_training FROM scraped_posts WHERE id = ${postId}`;
+  return rows.length > 0 ? rowToPost(rows[0]) : null;
 };

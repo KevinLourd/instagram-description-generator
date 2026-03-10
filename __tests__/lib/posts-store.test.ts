@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import path from "path";
-import os from "os";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { mockSql } = vi.hoisted(() => ({ mockSql: vi.fn() }));
+vi.mock("@/lib/db", () => ({ sql: mockSql }));
+
 import {
   getScrapedPosts,
   addScrapedPosts,
@@ -9,111 +10,111 @@ import {
   getPostById,
 } from "@/lib/posts-store";
 
-const tmpDir = path.join(os.tmpdir(), "lincoln-test-posts");
-const tmpFile = path.join(tmpDir, "test-scraped-posts.json");
-
-const emptyData = JSON.stringify({ posts: [] });
-
-beforeEach(async () => {
-  await mkdir(tmpDir, { recursive: true });
-  await writeFile(tmpFile, emptyData, "utf-8");
+beforeEach(() => {
+  mockSql.mockReset();
 });
 
-afterEach(async () => {
-  try {
-    await unlink(tmpFile);
-  } catch {
-    /* ignore */
-  }
-});
+const sampleRow = {
+  id: "post-1",
+  caption: "Beach vibes",
+  image_url: "https://img.com/1.jpg",
+  timestamp: "2024-01-01",
+  likes_count: 100,
+  url: "https://instagram.com/p/1",
+  added_to_training: false,
+};
 
 describe("getScrapedPosts", () => {
-  it("returns empty array for fresh file", async () => {
-    const posts = await getScrapedPosts(tmpFile);
+  it("returns empty array when no rows", async () => {
+    mockSql.mockResolvedValue([]);
+    const posts = await getScrapedPosts();
     expect(posts).toEqual([]);
+  });
+
+  it("maps database rows to InstagramPost objects", async () => {
+    mockSql.mockResolvedValue([sampleRow]);
+    const posts = await getScrapedPosts();
+    expect(posts).toHaveLength(1);
+    expect(posts[0]).toEqual({
+      id: "post-1",
+      caption: "Beach vibes",
+      imageUrl: "https://img.com/1.jpg",
+      timestamp: "2024-01-01",
+      likesCount: 100,
+      url: "https://instagram.com/p/1",
+      addedToTraining: false,
+    });
   });
 });
 
 describe("addScrapedPosts", () => {
-  it("adds posts with id and addedToTraining=false", async () => {
-    const added = await addScrapedPosts(
-      [
-        {
-          caption: "Beach vibes",
-          imageUrl: "https://img.com/1.jpg",
-          timestamp: "2024-01-01",
-          likesCount: 100,
-          url: "https://instagram.com/p/1",
-        },
-      ],
-      tmpFile
-    );
+  it("inserts posts and returns added ones", async () => {
+    mockSql.mockResolvedValue([sampleRow]);
+
+    const added = await addScrapedPosts([
+      {
+        caption: "Beach vibes",
+        imageUrl: "https://img.com/1.jpg",
+        timestamp: "2024-01-01",
+        likesCount: 100,
+        url: "https://instagram.com/p/1",
+      },
+    ]);
 
     expect(added).toHaveLength(1);
-    expect(added[0].id).toBeDefined();
+    expect(added[0].id).toBe("post-1");
     expect(added[0].addedToTraining).toBe(false);
-
-    const all = await getScrapedPosts(tmpFile);
-    expect(all).toHaveLength(1);
   });
 
-  it("deduplicates by url", async () => {
-    await addScrapedPosts(
-      [
-        {
-          caption: "First",
-          imageUrl: "",
-          timestamp: "",
-          likesCount: 10,
-          url: "https://instagram.com/p/abc",
-        },
-      ],
-      tmpFile
-    );
-    const second = await addScrapedPosts(
-      [
-        {
-          caption: "Duplicate",
-          imageUrl: "",
-          timestamp: "",
-          likesCount: 20,
-          url: "https://instagram.com/p/abc",
-        },
-      ],
-      tmpFile
-    );
+  it("returns empty array for duplicate urls (ON CONFLICT DO NOTHING)", async () => {
+    mockSql.mockResolvedValue([]);
 
-    expect(second).toHaveLength(0);
-    const all = await getScrapedPosts(tmpFile);
-    expect(all).toHaveLength(1);
-    expect(all[0].caption).toBe("First");
+    const added = await addScrapedPosts([
+      {
+        caption: "Duplicate",
+        imageUrl: "",
+        timestamp: "",
+        likesCount: 20,
+        url: "https://instagram.com/p/abc",
+      },
+    ]);
+
+    expect(added).toHaveLength(0);
+  });
+
+  it("returns empty array when given empty input", async () => {
+    const added = await addScrapedPosts([]);
+    expect(added).toEqual([]);
+    expect(mockSql).not.toHaveBeenCalled();
   });
 });
 
 describe("markAsTraining", () => {
-  it("marks a post as added to training", async () => {
-    const added = await addScrapedPosts(
-      [
-        {
-          caption: "Test",
-          imageUrl: "",
-          timestamp: "",
-          likesCount: 5,
-          url: "https://instagram.com/p/test",
-        },
-      ],
-      tmpFile
-    );
-
-    const result = await markAsTraining(added[0].id, tmpFile);
+  it("marks a post and returns it", async () => {
+    mockSql.mockResolvedValue([{ ...sampleRow, added_to_training: true }]);
+    const result = await markAsTraining("post-1");
     expect(result).not.toBeNull();
-
-    const post = await getPostById(added[0].id, tmpFile);
-    expect(post?.addedToTraining).toBe(true);
+    expect(result!.addedToTraining).toBe(true);
   });
 
   it("returns null for non-existent post", async () => {
-    const result = await markAsTraining("non-existent", tmpFile);
+    mockSql.mockResolvedValue([]);
+    const result = await markAsTraining("non-existent");
     expect(result).toBeNull();
+  });
+});
+
+describe("getPostById", () => {
+  it("returns the post when found", async () => {
+    mockSql.mockResolvedValue([sampleRow]);
+    const post = await getPostById("post-1");
+    expect(post).not.toBeNull();
+    expect(post!.id).toBe("post-1");
+  });
+
+  it("returns null when not found", async () => {
+    mockSql.mockResolvedValue([]);
+    const post = await getPostById("missing");
+    expect(post).toBeNull();
   });
 });
