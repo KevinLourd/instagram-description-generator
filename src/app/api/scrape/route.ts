@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { scrapeSchema } from "@/lib/types";
 import type { InstagramPost } from "@/lib/types";
 
-const APIFY_TOKEN = process.env.APIFY_API_TOKEN;
+const APIFY_TOKEN = process.env.APIFY_API_TOKEN ?? process.env.APIFY_API_KEY;
 const ACTOR_ID = "apify~instagram-scraper";
 const SYNC_ENDPOINT = `https://api.apify.com/v2/acts/${ACTOR_ID}/run-sync-get-dataset-items`;
 
 export const POST = async (request: Request) => {
   if (!APIFY_TOKEN) {
     return NextResponse.json(
-      { error: "APIFY_API_TOKEN is not configured" },
+      { error: "APIFY_API_TOKEN or APIFY_API_KEY is not configured" },
       { status: 500 }
     );
   }
