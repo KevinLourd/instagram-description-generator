@@ -18,31 +18,32 @@ type Job = {
 };
 
 const SAMPLE_PHOTOS = [
-  // City & urban life
-  "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=600",
+  // Selfies & portraits
+  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600",
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600",
+  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600",
+  // Coffee & brunch
+  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600",
+  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
+  "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=600",
+  "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600",
+  // Outfits & fashion
+  "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600",
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600",
+  "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600",
+  // Beach & travel
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+  "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600",
+  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600",
+  // Golden hour & sunsets
+  "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=600",
+  "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=600",
+  // City & going out
   "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=600",
   "https://images.unsplash.com/photo-1514565131-fce0801e5785?w=600",
-  "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=600",
-  "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600",
-  // Street & people
-  "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600",
   "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600",
   "https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=600",
-  // Cafes & food
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
-  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600",
-  "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600",
-  // Lifestyle & travel
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=600",
-  "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600",
-  "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=600",
-  // Night & neon
-  "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=600",
-  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600",
-  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=600",
-  "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=600",
 ];
 
 const pickRandom = (count: number) => {
